@@ -3,7 +3,7 @@ import os
 import pygame
 from abc import ABC, abstractmethod
 
-
+from animador import Animador, recortar_sprite_sheet
 class EstadoJuego(ABC):
     def __init__(self, pantalla):
         self.pantalla = pantalla
@@ -40,7 +40,16 @@ class EstadoMenu(EstadoJuego):
         self.font_option = pygame.font.SysFont(None, 46)
         self.font_text = pygame.font.SysFont(None, 32)
         self.font_small = pygame.font.SysFont(None, 26)
+        self.fondo = pygame.image.load("Fondo pista.jpeg").convert()
+        self.imagen_titulo = pygame.image.load("Logo_sin_fondo.png").convert_alpha()
 
+        animacion_sheet_jake = pygame.image.load("baile jake.png").convert_alpha()
+        frames_1 = recortar_sprite_sheet(animacion_sheet_jake, 357, 357, 27)
+        self.animacion_jake = Animador(frames_1, velocidad=8)
+
+        animacion_sheet_finn = pygame.image.load("fin bailando.png").convert_alpha()
+        frames_2 = recortar_sprite_sheet(animacion_sheet_finn, 386, 386, 4)
+        self.animacion_finn = Animador(frames_2, velocidad=8)
     def _load_records(self):
         if not os.path.exists(self.records_file):
             return []
@@ -156,6 +165,10 @@ class EstadoMenu(EstadoJuego):
         return None
 
     def actualizar(self):
+        if self.state == "MENU":
+            self.animacion_jake.actualizar()
+            self.animacion_finn.actualizar()
+            
         if self.sound_player is not None and self.state == "MENU" and self.message != "":
             pass
         return None
@@ -166,8 +179,10 @@ class EstadoMenu(EstadoJuego):
         self.pantalla.blit(rendered, rect)
 
     def _draw_menu(self):
-        self._draw_centered_text("DASH ZONE", 120, self.font_title)
-
+        rect_titulo = self.imagen_titulo.get_rect(center=(self.pantalla.get_width() // 2, 155))
+        self.pantalla.blit(self.imagen_titulo, rect_titulo)
+        self.pantalla.blit(self.animacion_jake.obtener_imagen_actual(), (self.pantalla.get_width() - 460, 360))
+        self.pantalla.blit(self.animacion_finn.obtener_imagen_actual(), (self.pantalla.get_width() - 1180, 260))
         start_y = 280
         for index, option in enumerate(self.options):
             color = (255, 255, 255)
@@ -258,7 +273,10 @@ class EstadoMenu(EstadoJuego):
         self.pantalla.blit(hint, hint_rect)
 
     def dibujar(self):
-        self.pantalla.fill((10, 10, 80))
+        self.pantalla.blit(self.fondo, (0, 0))
+
+        if self.state == "MENU":
+            self._draw_menu()
 
         if self.state == "MENU":
             self._draw_menu()

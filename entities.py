@@ -4,7 +4,7 @@ import random
 from settings import GRAVITY, JUMP_FORCE, SPACE_JUMP_FORCE
 
 class Player:
-    def __init__(self, x, y, w, h, ground_y):
+    def __init__(self, x, y, w, h, ground_y, frames_carrera=None, frames_salto=None):
         self.rect = pygame.Rect(x, y, w, h)
         self.vy = 0
         self.ground_y = ground_y
@@ -14,6 +14,12 @@ class Player:
         self.space_jumping = False
         self.last_space_jump_time = 0
 
+        # ANIMACIONES SEPARADAS 
+        self.frames_carrera = frames_carrera or []
+        self.frames_salto = frames_salto or []
+        self.frame_actual = 0
+        self.timer_animacion = 0
+        self.velocidad_animacion = 100
     def jump(self):
         if self.rect.bottom >= self.ground_y and not self.space_jumping:
             self.vy = JUMP_FORCE
@@ -96,18 +102,57 @@ class DiagonalObstacle(Obstacle):
         self.speed_y = speed_y
         self.ground_y = ground_y
 
-    def update(self, speed=None):
-        self.rect.x -= self.speed_x
-        if self.rect.bottom < self.ground_y:
-            self.rect.y += self.speed_y
-            if self.rect.bottom > self.ground_y:
-                self.rect.bottom = self.ground_y
+    def update(self):
+
+        gravity = GRAVITY * 2.0 if self.fast_fall and self.vy >= 0 else GRAVITY
+
+        if self.vy < 0 and self.holding_jump:
+            self.vy += gravity * 0.5
         else:
+            self.vy += gravity
+
+        if self.fast_fall and self.rect.bottom < self.ground_y:
+            if self.vy < 0:
+                self.vy -= 0.7
+            else:
+                self.vy += GRAVITY * 0.8
+
+        if self.space_jumping and self.rect.bottom >= self.ground_y:
+            now = pygame.time.get_ticks()
+            if now - self.last_space_jump_time >= 140:
+                self.vy = SPACE_JUMP_FORCE
+                self.holding_jump = True
+                self.last_space_jump_time = now
+            
+        self.rect.y += self.vy
+        
+        if self.rect.bottom >= self.ground_y:
             self.rect.bottom = self.ground_y
+            self.vy = 0
+            self.holding_jump = False
+
+        #Lógica de Animación 
+        if self.frames:
+            now = pygame.time.get_ticks()
+            if now - self.timer_animacion > self.velocidad_animacion:
+                self.timer_animacion = now
+                # Actualizamos el frame de la carrera solo si está tocando el suelo
+                if self.rect.bottom >= self.ground_y:
+                    self.frame_actual = (self.frame_actual + 1) % len(self.frames)
 
     def draw(self, screen):
-        pygame.draw.rect(screen, (180, 0, 0), self.rect)
-
+        if self.frames:
+            # Si el jugador está en el aire (saltando), forzamos un frame específico
+            if self.rect.bottom < self.ground_y:
+                imagen_a_dibujar = self.frames[0] # Puedes cambiar el índice para tu sprite de salto
+            else:
+                imagen_a_dibujar = self.frames[self.frame_actual]
+            
+            # Dibujamos el sprite en las coordenadas del rectángulo de colisión
+            screen.blit(imagen_a_dibujar, self.rect)
+        else:
+            # Fallback a tu rectángulo original[cite: 2]
+            pygame.draw.rect(screen, (40, 40, 40), self.rect)
 
 class ObstaclePoolManager:
     """Gestiona la memoria y la aleatoriedad de los obstáculos"""
