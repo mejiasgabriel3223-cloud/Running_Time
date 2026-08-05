@@ -1,6 +1,7 @@
-# game.py
+# game.py 
 import pygame
 import random
+from animador import cargar_spritesheet 
 from settings import S_WIDTH, S_HEIGHT
 from entities import Player, DiagonalObstacle, ObstaclePoolManager
 
@@ -16,18 +17,25 @@ class CarreraDeObstaculos:
         self.reset_game()
 
     def reset_game(self):
+        player_scale = 1.4  # tamaño perfecto del jugador
+        obstacle_scale = 2.0  # 100% más grande para obstáculos terrestres
         self.ground_y = self.S_HEIGHT - 120
-        self.player = Player(70, self.ground_y - 64, 34, 64, self.ground_y)
-        self.gap_variants = [20, 50, 160, 220, 300]
+        self.player = Player(80, 0, 60, 85, self.ground_y, None, None)
+        self.gap_variants = [140, 220, 300, 380, 460]
         self.player_name = getattr(self, "player_name", "Jugador")
         
-        self.obstacle_types = [(16, 44), (20, 56)]
+        self.obstacle_types = [
+            (int(24 * obstacle_scale), int(45 * obstacle_scale)),
+            (int(28 * obstacle_scale), int(52 * obstacle_scale)),
+        ]
         self.obstacle_manager = ObstaclePoolManager(self.ground_y, self.obstacle_types)
-        self.obstacle_manager.spawn_pair(self.S_WIDTH + 200, self.gap_variants)
-        
+        self.obstacle_manager.spawn_pair(self.S_WIDTH + 260, self.gap_variants)
+        self.fondo = pygame.image.load("Fondo pista.jpeg").convert()
+        self.fondo = pygame.transform.scale(self.fondo, (self.S_WIDTH, self.S_HEIGHT))
+
         self.diagonal_obstacle = None
-        self.next_diagonal_trigger = 100
-        self.base_speed = 6.6
+        self.next_diagonal_trigger = 180
+        self.base_speed = 9.2
         self.speed = self.base_speed
         self.score = 0
         
@@ -43,6 +51,23 @@ class CarreraDeObstaculos:
         self.last_fps_time = pygame.time.get_ticks()
         self.frames_count = 0
         self.current_fps = 0
+      
+        scale_factor = 1.4  # 40% más grande
+        target_height = int(126 * scale_factor)  # 126 * 1.4 = 176
+        frames_correr = cargar_spritesheet("fin corriendo.png", 10, escala=(None, target_height))
+        frames_saltar = cargar_spritesheet("fin saltando.png", 9, escala=(None, target_height))
+
+        ancho_hitbox = int(target_height * 0.55)  # 55% del alto de la animación
+        frame_width = frames_correr[0].get_width() if frames_correr else int(68 * scale_factor)
+        offset_x = 70 + max(0, (frame_width - ancho_hitbox) // 2)
+        
+        self.player = Player(
+            offset_x,
+            self.ground_y - target_height,
+            ancho_hitbox, target_height, self.ground_y,
+            frames_carrera=frames_correr,
+            frames_salto=frames_saltar
+        )
 
     def handle_events(self, events):
         for event in events:
@@ -131,9 +156,9 @@ class CarreraDeObstaculos:
                     break
 
             if is_safe:
-                spawn_x = self.S_WIDTH
+                spawn_x = self.S_WIDTH + 280
                 self.diagonal_obstacle = DiagonalObstacle(spawn_x, 30, 30, self.ground_y)
-                self.next_diagonal_trigger += 33 if self.boost_active else 67
+                self.next_diagonal_trigger += 50 if self.boost_active else 100
 
         if self.diagonal_obstacle:
             self.diagonal_obstacle.update()
@@ -143,7 +168,7 @@ class CarreraDeObstaculos:
                 self.diagonal_obstacle = None
 
         if not self.obstacle_manager.active:
-            self.obstacle_manager.spawn_pair(self.S_WIDTH + random.randint(120, 260), self.gap_variants)
+            self.obstacle_manager.spawn_pair(self.S_WIDTH + random.randint(180, 320), self.gap_variants)
 
         self.score += 1
         return None
@@ -216,7 +241,7 @@ class CarreraDeObstaculos:
             self.player.stop_fast_fall()
 
     def draw(self):
-        self.screen.fill((255, 255, 255))
+        self.screen.blit(self.fondo, (0, 0))
         self.player.draw(self.screen)
         self.obstacle_manager.draw(self.screen)
         
