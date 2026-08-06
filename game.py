@@ -5,6 +5,7 @@ from settings import S_WIDTH, S_HEIGHT
 from entities import Player, DiagonalObstacle, ObstaclePoolManager
 from personajes import Personaje
 from selector_de_personajes import CharacterSelector
+from animador import Animador
 
 class CarreraDeObstaculos:
     def __init__(self, screen):
@@ -42,10 +43,6 @@ class CarreraDeObstaculos:
         self.obstacle_manager.spawn_pair(self.S_WIDTH + 260, self.gap_variants)
         self.fondo = pygame.image.load("Fondo pista.jpeg").convert()
         self.fondo = pygame.transform.scale(self.fondo, (self.S_WIDTH, self.S_HEIGHT))
-
-        self.cloud_image = None
-        self.cloud_offset = 0.0
-        self.cloud_speed = 0.0
 
         self.diagonal_obstacle = None
         self.next_diagonal_trigger = 180

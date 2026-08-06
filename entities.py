@@ -1,5 +1,6 @@
 import pygame
 import random
+import os
 from settings import GRAVITY, JUMP_FORCE, SPACE_JUMP_FORCE
 from animador import cargar_spritesheet
 
@@ -104,8 +105,12 @@ class Player:
 class Obstacle:
     def __init__(self, x, y, w, h):
         try:
-            # 1. Cargamos la imagen y recortamos el espacio transparente
-            imagen_bruta = pygame.image.load("Valla.png").convert_alpha()
+            # 1. Cargamos la imagen real de la valla
+            ruta_valla = "Valla.png"
+            if not os.path.exists(ruta_valla):
+                ruta_valla = "valla.jpg"
+
+            imagen_bruta = pygame.image.load(ruta_valla).convert_alpha()
             caja_visible = imagen_bruta.get_bounding_rect()
             imagen_limpia = imagen_bruta.subsurface(caja_visible)
             
@@ -115,21 +120,19 @@ class Obstacle:
             
             # 3. Escalamos la valla
             self.image = pygame.transform.smoothscale(imagen_limpia, (ancho_visible, h))
-            
-            # 4. Creamos el rect para dibujar y una hitbox delgada centrada en el eje vertical de la valla
-            self.rect = self.image.get_rect()
-            self.rect.bottomleft = (x, y)
-            hitbox_width = max(4, int(self.rect.width * 0.2))
-            self.hitbox = pygame.Rect(0, 0, hitbox_width, h)
-            self.hitbox.midbottom = self.rect.midbottom
-            
         except Exception as e:
-            print(f"Error cargando imagen: {e}")
-            self.image = pygame.Surface((w, h))
-            self.image.fill((255, 0, 0))
+            print(f"Error cargando imagen de valla: {e}")
+            ancho_visible = max(24, int(w * 0.7))
+            self.image = pygame.Surface((ancho_visible, h), pygame.SRCALPHA)
+            self.image.fill((180, 50, 50))
+            pygame.draw.rect(self.image, (255, 255, 255), (4, 4, ancho_visible - 8, h - 8), 2)
+            for i in range(3):
+                line_y = 8 + i * (h - 16) // 2
+                pygame.draw.line(self.image, (220, 220, 220), (8, line_y), (ancho_visible - 8, line_y), 2)
+        finally:
             self.rect = self.image.get_rect()
             self.rect.bottomleft = (x, y)
-            self.hitbox = pygame.Rect(0, 0, max(4, int(w * 0.2)), h)
+            self.hitbox = pygame.Rect(0, 0, max(4, int(self.rect.width * 0.2)), h)
             self.hitbox.midbottom = self.rect.midbottom
 
     def update(self, speed):
