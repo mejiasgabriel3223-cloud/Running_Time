@@ -76,6 +76,7 @@ class EstadoMenu(EstadoJuego):
 
         self.pending_score = score
         self.pending_name = player_name.strip() or "Jugador"
+        self.pending_old_score = None
         self.records = self._load_records()
 
         existing = [entry for entry in self.records if str(entry.get("name", "")).lower() == self.pending_name.lower()]
@@ -85,8 +86,9 @@ class EstadoMenu(EstadoJuego):
             self._show_message(f"Nuevo record guardado para {self.pending_name}: {score}")
             return
 
+        self.pending_old_score = max(entry.get("score", 0) for entry in existing)
         self.state = "REPLACE_PROMPT"
-        self._show_message(f"Ya existe un record de {self.pending_name}. ¿Reemplazarlo? (S/N)")
+        self._show_message("")
 
     def _apply_prompt(self, replace):
         if self.pending_name is None or self.pending_score is None:
@@ -290,5 +292,8 @@ class EstadoMenu(EstadoJuego):
             self._draw_credits()
         elif self.state == "REPLACE_PROMPT":
             self._draw_centered_text("Guardar record", 140, self.font_title)
-            self._draw_centered_text(self.message, 300, self.font_text)
-            self._draw_centered_text("Presiona S o N", 360, self.font_small)
+            old_text = f"Record anterior: {self.pending_old_score}" if self.pending_old_score is not None else "Record anterior: --"
+            new_text = f"Puntaje actual: {self.pending_score}"
+            self._draw_centered_text(old_text, 290, self.font_text)
+            self._draw_centered_text(new_text, 340, self.font_text)
+            self._draw_centered_text("Presiona S para reemplazar o N para conservar", 410, self.font_small)

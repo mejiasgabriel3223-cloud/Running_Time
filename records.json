@@ -1,9 +1,5 @@
 [
   {
-    "name": "Jugador",
-    "score": 333
-  },
-  {
     "name": "yy",
     "score": 250
   },
@@ -16,20 +12,16 @@
     "score": 223
   },
   {
+    "name": "a",
+    "score": 209
+  },
+  {
     "name": "Jugador",
-    "score": 188
+    "score": 184
   },
   {
     "name": "sdkmg",
     "score": 139
-  },
-  {
-    "name": "a",
-    "score": 138
-  },
-  {
-    "name": "Jugador",
-    "score": 121
   },
   {
     "name": "sofii",
@@ -60,12 +52,28 @@
     "score": 96
   },
   {
+    "name": "k",
+    "score": 93
+  },
+  {
     "name": "gabriel+}",
     "score": 92
   },
   {
+    "name": "so",
+    "score": 80
+  },
+  {
+    "name": "so",
+    "score": 73
+  },
+  {
     "name": "Humungo",
     "score": 71
+  },
+  {
+    "name": "sofi",
+    "score": 55
   },
   {
     "name": "so",
@@ -78,6 +86,14 @@
   {
     "name": "Gabriel",
     "score": 36
+  },
+  {
+    "name": "so",
+    "score": 36
+  },
+  {
+    "name": "so",
+    "score": 35
   },
   {
     "name": "}",
@@ -140,11 +156,15 @@
     "score": 17
   },
   {
-    "name": "a",
+    "name": "sofi",
     "score": 17
   },
   {
     "name": "Gabriel",
+    "score": 14
+  },
+  {
+    "name": "so",
     "score": 14
   }
 ]

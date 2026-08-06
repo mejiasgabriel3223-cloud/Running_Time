@@ -141,7 +141,6 @@ class Obstacle:
     def draw(self, screen):
         if self.image:
             screen.blit(self.image, self.rect)
-            pygame.draw.rect(screen, (255, 0, 0), self.hitbox, 1)
         else:
             pygame.draw.rect(screen, (0, 200, 0), self.rect)
 class DiagonalObstacle(Obstacle):

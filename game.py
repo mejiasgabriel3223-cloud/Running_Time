@@ -43,6 +43,10 @@ class CarreraDeObstaculos:
         self.fondo = pygame.image.load("Fondo pista.jpeg").convert()
         self.fondo = pygame.transform.scale(self.fondo, (self.S_WIDTH, self.S_HEIGHT))
 
+        self.cloud_image = None
+        self.cloud_offset = 0.0
+        self.cloud_speed = 0.0
+
         self.diagonal_obstacle = None
         self.next_diagonal_trigger = 180
         self.base_speed = 9.2
@@ -54,7 +58,6 @@ class CarreraDeObstaculos:
         self.next_boost_trigger = 300
         self.boost_duration_points = 150
         self.boost_end_score = 0
-        self.challenge_mode = False
         self.frenzy_alert_timer = 0.0
         self.frenzy_alert_active = False
         
@@ -64,27 +67,27 @@ class CarreraDeObstaculos:
       
         scale_factor = 1.4  # 40% más grande
         target_height = int(126 * scale_factor)  # 126 * 1.4 = 176
-
-        personaje = self.personaje_actual
         base_width = int(68 * scale_factor)
 
-        def escalar_frame(frame, width=None):
+        personaje = self.personaje_actual
+
+        def escalar_frame(frame):
             if frame is None:
                 return None
-            if width is None:
-                width = base_width
             aspect_ratio = frame.get_width() / frame.get_height()
-            scaled_width = int(width)
-            scaled_height = int(scaled_width / aspect_ratio)
-            if scaled_height != target_height:
-                scaled_height = target_height
-                scaled_width = int(scaled_height * aspect_ratio)
+            scaled_height = target_height
+            scaled_width = int(scaled_height * aspect_ratio)
             return pygame.transform.smoothscale(frame, (scaled_width, scaled_height))
 
-        frames_correr = [escalar_frame(img, base_width) for img in personaje.frames_carrera]
-        frames_saltar = [escalar_frame(img, base_width) for img in personaje.frames_salto]
+        frames_correr = [escalar_frame(img) for img in personaje.frames_carrera]
+        frames_saltar = [escalar_frame(img) for img in personaje.frames_salto]
 
-        target_width = max(frame.get_width() for frame in frames_correr + frames_saltar) if frames_correr or frames_saltar else base_width
+        if not frames_correr:
+            frames_correr = [pygame.Surface((base_width, target_height), pygame.SRCALPHA)]
+        if not frames_saltar:
+            frames_saltar = [pygame.Surface((base_width, target_height), pygame.SRCALPHA)]
+
+        target_width = max(frame.get_width() for frame in frames_correr + frames_saltar)
         for index, frame in enumerate(frames_correr):
             frames_correr[index] = pygame.transform.smoothscale(frame, (target_width, target_height))
         for index, frame in enumerate(frames_saltar):
@@ -106,29 +109,22 @@ class CarreraDeObstaculos:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 return "MENU"
                 
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_p:
-                self.challenge_mode = not self.challenge_mode
-                self.player.stop_space_jump()
-                self.player.stop_fast_fall()
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_w:
+                if not self.player.space_jumping and not self.player.fast_fall:
+                    self.player.jump()
+            if event.type == pygame.KEYUP and event.key == pygame.K_w:
                 self.player.release_jump()
-
-            if not self.challenge_mode:
-                if event.type == pygame.KEYDOWN and event.key == pygame.K_w:
-                    if not self.player.space_jumping and not self.player.fast_fall:
-                        self.player.jump()
-                if event.type == pygame.KEYUP and event.key == pygame.K_w:
-                    self.player.release_jump()
-                if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
-                    if not self.player.fast_fall:
-                        self.player.stop_space_jump()
-                        self.player.start_space_jump()
-                if event.type == pygame.KEYUP and event.key == pygame.K_SPACE:
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                if not self.player.fast_fall:
                     self.player.stop_space_jump()
-                if event.type == pygame.KEYDOWN and event.key == pygame.K_s:
-                    if not self.player.space_jumping and not self.player.holding_jump:
-                        self.player.start_fast_fall()
-                if event.type == pygame.KEYUP and event.key == pygame.K_s:
-                    self.player.stop_fast_fall()
+                    self.player.start_space_jump()
+            if event.type == pygame.KEYUP and event.key == pygame.K_SPACE:
+                self.player.stop_space_jump()
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_s:
+                if not self.player.space_jumping and not self.player.holding_jump:
+                    self.player.start_fast_fall()
+            if event.type == pygame.KEYUP and event.key == pygame.K_s:
+                self.player.stop_fast_fall()
         return None
 
     def _restart_frenzy_music(self):
@@ -188,12 +184,11 @@ class CarreraDeObstaculos:
             self.last_fps_time = curr
 
         self.update_speed(dt)
-        self.update_autoplay()
         self.player.update(game_speed=self.speed)
         self.obstacle_manager.update(self.speed)
         
         if self.obstacle_manager.check_collision(self.player.rect):
-            return "MENU" 
+            return "GAMEOVER"
 
         if (self.score // 10) >= self.next_diagonal_trigger and not self.diagonal_obstacle:
             if self._can_spawn_diagonal_obstacle():
@@ -203,10 +198,6 @@ class CarreraDeObstaculos:
 
         if self.diagonal_obstacle:
             self.diagonal_obstacle.update(self.speed)
-            if self.player.rect.colliderect(self.diagonal_obstacle.rect):
-                return "MENU"
-            if self.diagonal_obstacle.rect.right < 0:
-                self.diagonal_obstacle = None
 
         if not self.obstacle_manager.active:
             self.obstacle_manager.spawn_pair(self.S_WIDTH + random.randint(180, 320), self.gap_variants)
@@ -294,26 +285,24 @@ class CarreraDeObstaculos:
         score_text = self.font.render(f"Score: {self.score // 10}", True, (0, 0, 0))
         self.screen.blit(score_text, (20, 20))
 
-        boost_state = "Modo Frenesí: ON" if self.boost_active else "Modo Frenesí: OFF"
-        boost_text = self.font.render(boost_state, True, (220, 90, 0) if self.boost_active else (100, 100, 100))
-        self.screen.blit(boost_text, (20, 56))
-
-        challenge_state = "Modo Prueba: ON" if self.challenge_mode else "Modo Prueba: OFF"
-        challenge_text = self.font.render(challenge_state, True, (0, 120, 220) if self.challenge_mode else (100, 100, 100))
-        self.screen.blit(challenge_text, (20, 86))
-
-        if self.frenzy_alert_active:
-            elapsed = self.frenzy_alert_timer
-            if elapsed < 0.25:
-                scale = 0.8 + elapsed / 0.25 * 1.4
-            else:
-                scale = 2.2 - (elapsed / 0.7) * 1.5
-            scale = max(0.2, min(scale, 2.2))
-            text_surface = self.frenzy_alert_font.render("MODO FRENESI", True, (220, 0, 0))
-            rect = text_surface.get_rect(center=(self.S_WIDTH // 2, self.S_HEIGHT // 2 - 40))
-            scaled_surface = pygame.transform.scale_by(text_surface, scale)
-            scaled_rect = scaled_surface.get_rect(center=rect.center)
-            self.screen.blit(scaled_surface, scaled_rect)
         
         fps_text = self.font.render(f"FPS: {self.current_fps}", True, (0, 0, 180))
         self.screen.blit(fps_text, (self.S_WIDTH - 140, 20))
+
+    def draw_gameover(self):
+        overlay = pygame.Surface((self.S_WIDTH, self.S_HEIGHT), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 190))
+        self.screen.blit(overlay, (0, 0))
+
+        title_font = pygame.font.SysFont("consolas", 60, bold=True)
+        text_font = pygame.font.SysFont("consolas", 28)
+
+        title_surface = title_font.render("GAME OVER", True, (255, 255, 255))
+        score_surface = text_font.render(f"Puntaje: {self.score // 10}", True, (255, 255, 255))
+        retry_surface = text_font.render("Presiona Enter para reiniciar", True, (220, 220, 220))
+        menu_surface = text_font.render("Presiona ESC para volver al menú", True, (220, 220, 220))
+
+        self.screen.blit(title_surface, title_surface.get_rect(center=(self.S_WIDTH // 2, 220)))
+        self.screen.blit(score_surface, score_surface.get_rect(center=(self.S_WIDTH // 2, 300)))
+        self.screen.blit(retry_surface, retry_surface.get_rect(center=(self.S_WIDTH // 2, 360)))
+        self.screen.blit(menu_surface, menu_surface.get_rect(center=(self.S_WIDTH // 2, 410)))

@@ -61,13 +61,31 @@ def main():
                 estado_actual = "MENU"
 
             resultado_update = juego.update(dt)
-            if resultado_update == "MENU":
+            if resultado_update == "GAMEOVER":
+                estado_actual = "GAMEOVER"
+            elif resultado_update == "MENU":
                 estado_actual = "MENU"
                 score = juego.score // 10
                 menu.finalizar_partida(score, juego.player_name)
                 sound_player.play_menu_music()
 
             juego.draw()
+
+        elif estado_actual == "GAMEOVER":
+            for event in events:
+                if event.type == pygame.KEYDOWN:
+                    if event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+                        juego.reset_game()
+                        sound_player.play_game_music(0)
+                        estado_actual = "JUGANDO"
+                    elif event.key == pygame.K_ESCAPE:
+                        estado_actual = "MENU"
+                        score = juego.score // 10
+                        menu.finalizar_partida(score, juego.player_name)
+                        sound_player.play_menu_music()
+
+            juego.draw()
+            juego.draw_gameover()
 
         pygame.display.flip()
 
