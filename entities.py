@@ -63,17 +63,17 @@ class Player:
         self.fast_fall = False
         self.holding_down = False
 
-    def update(self):
+    def update(self, game_speed=1.0):
         if self.fast_fall and self.rect.bottom < self.ground_y:
             self.vy += GRAVITY * 3
         else:
             self.vy += GRAVITY
         self.rect.y += self.vy
-        self.update_animacion(saltando=self.rect.bottom < self.ground_y)
+        self.update_animacion(saltando=self.rect.bottom < self.ground_y, game_speed=game_speed)
         if self.rect.bottom >= self.ground_y:
             self.rect.bottom = self.ground_y
             self.vy = 0
-    def update_animacion(self, saltando=False):
+    def update_animacion(self, saltando=False, game_speed=1.0):
         frames_actuales = self.frames_salto if saltando else self.frames_carrera
         
         if not frames_actuales:
@@ -84,14 +84,15 @@ class Player:
             self.animacion_timer = 0
             self.en_suelo_anterior = saltando
 
+        frame_rate = max(2, int(6 - min(3.5, max(0.0, game_speed - 9.2) * 0.3)))
         self.animacion_timer += 1
         if saltando:
-            if self.animacion_timer >= 6:
+            if self.animacion_timer >= frame_rate:
                 if self.current_frame < len(frames_actuales) - 1:
                     self.current_frame += 1
                 self.animacion_timer = 0
         else:
-            if self.animacion_timer >= 6:
+            if self.animacion_timer >= frame_rate:
                 self.current_frame = (self.current_frame + 1) % len(frames_actuales)
                 self.animacion_timer = 0
                 
@@ -144,7 +145,9 @@ class Obstacle:
         else:
             pygame.draw.rect(screen, (0, 200, 0), self.rect)
 class DiagonalObstacle(Obstacle):
-    def __init__(self, x, w, h, ground_y, speed_x=7, speed_y=3):
+    def __init__(self, x, w, h, ground_y, speed_x=7, speed_y=4):
+        self.base_speed_x = speed_x
+        self.base_speed_y = speed_y
         self.speed_x = speed_x
         self.speed_y = speed_y
         self.ground_y = ground_y
@@ -170,17 +173,21 @@ class DiagonalObstacle(Obstacle):
         self.rect.bottomleft = (x, 0)
 
     def update(self, speed=None):
-        self.rect.x -= self.speed_x
+        horizontal_speed = self.speed_x if speed is None else max(self.base_speed_x + 1.0, speed * 1.2)
+        vertical_speed = self.speed_y if speed is None else max(self.base_speed_y + 1.4, self.base_speed_y + speed * 0.2)
+
+        self.rect.x -= horizontal_speed
         if self.rect.bottom < self.ground_y:
-            self.rect.y += self.speed_y
+            self.rect.y += vertical_speed
             if self.rect.bottom > self.ground_y:
                 self.rect.bottom = self.ground_y
         else:
             self.rect.bottom = self.ground_y
 
         if self.frames:
+            frame_rate = max(2, int(6 - min(3.5, max(0.0, (speed or 9.2) - 9.2) * 0.3)))
             self.anim_timer += 1
-            if self.anim_timer >= 6:
+            if self.anim_timer >= frame_rate:
                 self.anim_timer = 0
                 self.current_frame = (self.current_frame + 1) % len(self.frames)
                 self.image = self.frames[self.current_frame]

@@ -1,5 +1,9 @@
 [
   {
+    "name": "Jugador",
+    "score": 333
+  },
+  {
     "name": "yy",
     "score": 250
   },
@@ -12,6 +16,10 @@
     "score": 223
   },
   {
+    "name": "Jugador",
+    "score": 188
+  },
+  {
     "name": "sdkmg",
     "score": 139
   },
@@ -21,7 +29,7 @@
   },
   {
     "name": "Jugador",
-    "score": 135
+    "score": 121
   },
   {
     "name": "sofii",
@@ -38,10 +46,6 @@
   {
     "name": "sof",
     "score": 101
-  },
-  {
-    "name": "Gabriel",
-    "score": 100
   },
   {
     "name": "sofi",
@@ -64,32 +68,20 @@
     "score": 71
   },
   {
-    "name": "}",
-    "score": 62
-  },
-  {
-    "name": "Jugador",
-    "score": 58
-  },
-  {
-    "name": "Jugador",
-    "score": 56
-  },
-  {
     "name": "so",
     "score": 41
   },
   {
-    "name": "Jugador",
-    "score": 40
-  },
-  {
-    "name": "Jugador",
-    "score": 39
-  },
-  {
     "name": "PRUEBA",
     "score": 37
+  },
+  {
+    "name": "Gabriel",
+    "score": 36
+  },
+  {
+    "name": "}",
+    "score": 33
   },
   {
     "name": "so",
@@ -128,6 +120,22 @@
     "score": 18
   },
   {
+    "name": "gyuhvfujv",
+    "score": 18
+  },
+  {
+    "name": "wgiouh",
+    "score": 18
+  },
+  {
+    "name": "wdaaeolgfjnmgf",
+    "score": 18
+  },
+  {
+    "name": "Gabriel",
+    "score": 18
+  },
+  {
     "name": "s",
     "score": 17
   },
@@ -136,7 +144,7 @@
     "score": 17
   },
   {
-    "name": "Jugador",
-    "score": 17
+    "name": "Gabriel",
+    "score": 14
   }
 ]

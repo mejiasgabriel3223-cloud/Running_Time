@@ -66,24 +66,32 @@ class CarreraDeObstaculos:
         target_height = int(126 * scale_factor)  # 126 * 1.4 = 176
 
         personaje = self.personaje_actual
-        frames_correr = [
-            pygame.transform.smoothscale(
-                img,
-                (int(img.get_width() * target_height / img.get_height()), target_height)
-            )
-            for img in personaje.frames_carrera
-        ]
-        frames_saltar = [
-            pygame.transform.smoothscale(
-                img,
-                (int(img.get_width() * target_height / img.get_height()), target_height)
-            )
-            for img in personaje.frames_salto
-        ]
+        base_width = int(68 * scale_factor)
+
+        def escalar_frame(frame, width=None):
+            if frame is None:
+                return None
+            if width is None:
+                width = base_width
+            aspect_ratio = frame.get_width() / frame.get_height()
+            scaled_width = int(width)
+            scaled_height = int(scaled_width / aspect_ratio)
+            if scaled_height != target_height:
+                scaled_height = target_height
+                scaled_width = int(scaled_height * aspect_ratio)
+            return pygame.transform.smoothscale(frame, (scaled_width, scaled_height))
+
+        frames_correr = [escalar_frame(img, base_width) for img in personaje.frames_carrera]
+        frames_saltar = [escalar_frame(img, base_width) for img in personaje.frames_salto]
+
+        target_width = max(frame.get_width() for frame in frames_correr + frames_saltar) if frames_correr or frames_saltar else base_width
+        for index, frame in enumerate(frames_correr):
+            frames_correr[index] = pygame.transform.smoothscale(frame, (target_width, target_height))
+        for index, frame in enumerate(frames_saltar):
+            frames_saltar[index] = pygame.transform.smoothscale(frame, (target_width, target_height))
 
         ancho_hitbox = int(target_height * 0.55)  # 55% del alto de la animación
-        frame_width = frames_correr[0].get_width() if frames_correr else int(68 * scale_factor)
-        offset_x = 70 + max(0, (frame_width - ancho_hitbox) // 2)
+        offset_x = 70 + max(0, (target_width - ancho_hitbox) // 2)
         
         self.player = Player(
             offset_x,
@@ -156,6 +164,21 @@ class CarreraDeObstaculos:
             self.frenzy_alert_timer = 0.0
             self._restart_frenzy_music()
 
+    def _can_spawn_diagonal_obstacle(self):
+        player_window_left = self.player.rect.right + 40
+        player_window_right = self.player.rect.right + 320
+
+        for obs in self.obstacle_manager.active:
+            if obs.rect.right >= player_window_left and obs.rect.left <= player_window_right:
+                return False
+
+        spawn_x = self.S_WIDTH + 280
+        for obs in self.obstacle_manager.active:
+            if obs.rect.right >= spawn_x - 120 and obs.rect.left <= spawn_x + 120:
+                return False
+
+        return True
+
     def update(self, dt):
         self.frames_count += 1
         curr = pygame.time.get_ticks()
@@ -166,27 +189,20 @@ class CarreraDeObstaculos:
 
         self.update_speed(dt)
         self.update_autoplay()
-        self.player.update()
+        self.player.update(game_speed=self.speed)
         self.obstacle_manager.update(self.speed)
         
         if self.obstacle_manager.check_collision(self.player.rect):
             return "MENU" 
 
         if (self.score // 10) >= self.next_diagonal_trigger and not self.diagonal_obstacle:
-            is_safe = True
-            safe_distance = 380
-            for obs in self.obstacle_manager.active:
-                if obs.rect.right > self.S_WIDTH - safe_distance:
-                    is_safe = False
-                    break
-
-            if is_safe:
+            if self._can_spawn_diagonal_obstacle():
                 spawn_x = self.S_WIDTH + 280
                 self.diagonal_obstacle = DiagonalObstacle(spawn_x, 30, 30, self.ground_y)
                 self.next_diagonal_trigger += 50 if self.boost_active else 100
 
         if self.diagonal_obstacle:
-            self.diagonal_obstacle.update()
+            self.diagonal_obstacle.update(self.speed)
             if self.player.rect.colliderect(self.diagonal_obstacle.rect):
                 return "MENU"
             if self.diagonal_obstacle.rect.right < 0:

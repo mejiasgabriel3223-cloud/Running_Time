@@ -179,11 +179,11 @@ class EstadoMenu(EstadoJuego):
         self.pantalla.blit(rendered, rect)
 
     def _draw_menu(self):
-        rect_titulo = self.imagen_titulo.get_rect(center=(self.pantalla.get_width() // 2, 155))
+        rect_titulo = self.imagen_titulo.get_rect(center=(self.pantalla.get_width() // 2, 165))
         self.pantalla.blit(self.imagen_titulo, rect_titulo)
         self.pantalla.blit(self.animacion_jake.obtener_imagen_actual(), (self.pantalla.get_width() - 460, 360))
         self.pantalla.blit(self.animacion_finn.obtener_imagen_actual(), (self.pantalla.get_width() - 1180, 260))
-        start_y = 280
+        start_y = 320
         for index, option in enumerate(self.options):
             color = (255, 255, 255)
             if index == self.selected_index:
@@ -194,7 +194,7 @@ class EstadoMenu(EstadoJuego):
 
         if self.message:
             message_text = self.font_small.render(self.message, True, (220, 220, 220))
-            message_rect = message_text.get_rect(center=(self.pantalla.get_width() // 2, 560))
+            message_rect = message_text.get_rect(center=(self.pantalla.get_width() // 2, 620))
             self.pantalla.blit(message_text, message_rect)
 
     def _draw_name_input(self):
@@ -208,12 +208,12 @@ class EstadoMenu(EstadoJuego):
         self.pantalla.blit(name_surface, name_rect)
 
         instructions = self.font_small.render("Presiona Enter para empezar", True, (220, 220, 220))
-        instructions_rect = instructions.get_rect(center=(self.pantalla.get_width() // 2, 380))
+        instructions_rect = instructions.get_rect(center=(self.pantalla.get_width() // 2, 420))
         self.pantalla.blit(instructions, instructions_rect)
 
         if self.message:
             msg_surface = self.font_small.render(self.message, True, (220, 220, 220))
-            msg_rect = msg_surface.get_rect(center=(self.pantalla.get_width() // 2, 560))
+            msg_rect = msg_surface.get_rect(center=(self.pantalla.get_width() // 2, 620))
             self.pantalla.blit(msg_surface, msg_rect)
 
     def _draw_records(self):
@@ -222,7 +222,7 @@ class EstadoMenu(EstadoJuego):
 
         if not top_records:
             empty_text = self.font_text.render("Aún no hay records guardados", True, (255, 255, 255))
-            empty_rect = empty_text.get_rect(center=(self.pantalla.get_width() // 2, 300))
+            empty_rect = empty_text.get_rect(center=(self.pantalla.get_width() // 2, 340))
             self.pantalla.blit(empty_text, empty_rect)
             return
 
@@ -231,7 +231,7 @@ class EstadoMenu(EstadoJuego):
             puntaje = entry.get("score", 0)
             line = f"{index + 1}. {nombre} - {puntaje}"
             rendered = self.font_text.render(line, True, (255, 255, 255))
-            rect = rendered.get_rect(center=(self.pantalla.get_width() // 2, 260 + index * 40))
+            rect = rendered.get_rect(center=(self.pantalla.get_width() // 2, 300 + index * 40))
             self.pantalla.blit(rendered, rect)
 
         hint = self.font_small.render("Presiona ESC para volver", True, (220, 220, 220))
