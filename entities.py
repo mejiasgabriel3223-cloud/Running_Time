@@ -4,7 +4,6 @@ from settings import GRAVITY, JUMP_FORCE, SPACE_JUMP_FORCE
 
 class Player:
     def __init__(self, x, y, w, h, ground_y, frames_carrera=None, frames_salto=None):
-        # Usamos exactamente el ancho (w) y alto (h) que le pasas desde game.py
         self.rect = pygame.Rect(x, ground_y - h, w, h)
         self.vy = 0
         self.ground_y = ground_y
@@ -23,7 +22,14 @@ class Player:
         
         self.current_frame = 0
         self.animacion_timer = 0
-        self.image = None
+        self.en_suelo_anterior = True
+        
+        if self.frames_carrera:
+            self.image = self.frames_carrera[0]
+        else:
+            # Cuadro rosado de respaldo por si acaso falta algún frame
+            self.image = pygame.Surface((w, h))
+            self.image.fill((255, 0, 255))
     def jump(self):
         if self.rect.bottom >= self.ground_y and not self.space_jumping:
             self.vy = JUMP_FORCE
@@ -62,45 +68,37 @@ class Player:
         else:
             self.vy += GRAVITY
         self.rect.y += self.vy
-        self.update_animacion()
+        self.update_animacion(saltando=self.rect.bottom < self.ground_y)
         if self.rect.bottom >= self.ground_y:
             self.rect.bottom = self.ground_y
             self.vy = 0
-    def update_animacion(self):
-        en_el_suelo = self.rect.bottom >= self.ground_y
+    def update_animacion(self, saltando=False):
+        frames_actuales = self.frames_salto if saltando else self.frames_carrera
+        
+        if not frames_actuales:
+            return
 
-        # Si Finn acaba de despegar o de aterrizar, reiniciamos el contador de frames
-        if not hasattr(self, "en_suelo_anterior"):
-            self.en_suelo_anterior = True
-
-        if en_el_suelo != self.en_suelo_anterior:
+        if saltando != self.en_suelo_anterior:
             self.current_frame = 0
             self.animacion_timer = 0
-            self.en_suelo_anterior = en_el_suelo
+            self.en_suelo_anterior = saltando
 
-        frames_actuales = self.frames_carrera if en_el_suelo else self.frames_salto
-
-        if frames_actuales:
-            self.animacion_timer += 1
-            
-            if en_el_suelo:
-                if self.animacion_timer >= 6: # Sube este número si quieres que corra más lento
-                    self.current_frame = (self.current_frame + 1) % len(frames_actuales)
-                    self.animacion_timer = 0
-            else:
-                # Saltar: Avanza una sola vez y se congela en el último frame del salto
-                if self.animacion_timer >= 6:
-                    if self.current_frame < len(frames_actuales) - 1:
-                        self.current_frame += 1
-                    self.animacion_timer = 0
-
-            self.image = frames_actuales[self.current_frame]
+        self.animacion_timer += 1
+        if saltando:
+            if self.animacion_timer >= 6:
+                if self.current_frame < len(frames_actuales) - 1:
+                    self.current_frame += 1
+                self.animacion_timer = 0
+        else:
+            if self.animacion_timer >= 6:
+                self.current_frame = (self.current_frame + 1) % len(frames_actuales)
+                self.animacion_timer = 0
+                
+        self.image = frames_actuales[self.current_frame]
 
     def draw(self, screen):
         if self.image:
             screen.blit(self.image, self.rect)
-        else:
-            pygame.draw.rect(screen, (40, 40, 40), self.rect)
 class Obstacle:
     def __init__(self, x, y, w, h):
         try:
@@ -146,11 +144,19 @@ class Obstacle:
             pygame.draw.rect(screen, (0, 200, 0), self.rect)
 class DiagonalObstacle(Obstacle):
     def __init__(self, x, w, h, ground_y, speed_x=7, speed_y=3):
-        self.rect = pygame.Rect(x, 0, w, h)
         self.speed_x = speed_x
         self.speed_y = speed_y
         self.ground_y = ground_y
 
+        try:
+            self.image = pygame.image.load("pelota.png").convert_alpha()
+            self.image = pygame.transform.smoothscale(self.image, (w, h))
+        except Exception:
+            self.image = pygame.Surface((w, h), pygame.SRCALPHA)
+            pygame.draw.ellipse(self.image, (255, 255, 255), self.image.get_rect())
+
+        self.rect = self.image.get_rect()
+        self.rect.bottomleft = (x, 0)
 
     def update(self, speed=None):
         self.rect.x -= self.speed_x
@@ -163,7 +169,10 @@ class DiagonalObstacle(Obstacle):
 
 
     def draw(self, screen):
-        pygame.draw.rect(screen, (180, 0, 0), self.rect)
+        if hasattr(self, "image") and self.image:
+            screen.blit(self.image, self.rect)
+        else:
+            pygame.draw.rect(screen, (180, 0, 0), self.rect)
 
 
 class ObstaclePoolManager:
@@ -173,14 +182,19 @@ class ObstaclePoolManager:
         self.types = types
         self.pool = [Obstacle(0, 10, 10, ground_y) for _ in range(6)]
         self.active = []
+        self.last_spawned_gap = None
+        self.last_spawned_positions = []
 
     def spawn_pair(self, start_x, gap_variants):
         dist = random.choice(gap_variants)
         current_x = start_x
+        self.last_spawned_gap = dist
+        self.last_spawned_positions = []
         for _ in range(2):
             w, h = random.choice(self.types)
             obs = Obstacle(current_x, self.ground_y, w, h)
             self.active.append(obs)
+            self.last_spawned_positions.append(current_x)
             current_x += w + dist
 
     def update(self, speed):

@@ -1,9 +1,10 @@
 # game.py 
 import pygame
 import random
-from animador import cargar_spritesheet 
 from settings import S_WIDTH, S_HEIGHT
 from entities import Player, DiagonalObstacle, ObstaclePoolManager
+from personajes import Personaje
+from selector_de_personajes import CharacterSelector
 
 class CarreraDeObstaculos:
     def __init__(self, screen):
@@ -14,6 +15,15 @@ class CarreraDeObstaculos:
         self.frenzy_alert_font = pygame.font.SysFont("consolas", 48, bold=True)
         self.player_name = "Jugador"
         self.sound_player = None
+        
+        self.personajes_disponibles = [
+            Personaje("Finn", "fin_quieto.png", "fin_corriendo.png", 10, "fin_saltando.png", 9),
+            Personaje("Jake", "jake_quieto.png", "jake_corriendo.png", 8, "jake_saltando.png", 10),
+            Personaje("Gunther", "gunter_quieto.png", "gunter_corriendo.png", 8, "gunter_saltando.png", 7)
+        ]
+
+        self.selector = CharacterSelector(self.personajes_disponibles, self.S_WIDTH, self.S_HEIGHT)
+        self.personaje_actual = self.personajes_disponibles[0]
         self.reset_game()
 
     def reset_game(self):
@@ -54,8 +64,22 @@ class CarreraDeObstaculos:
       
         scale_factor = 1.4  # 40% más grande
         target_height = int(126 * scale_factor)  # 126 * 1.4 = 176
-        frames_correr = cargar_spritesheet("fin corriendo.png", 10, escala=(None, target_height))
-        frames_saltar = cargar_spritesheet("fin saltando.png", 9, escala=(None, target_height))
+
+        personaje = self.personaje_actual
+        frames_correr = [
+            pygame.transform.smoothscale(
+                img,
+                (int(img.get_width() * target_height / img.get_height()), target_height)
+            )
+            for img in personaje.frames_carrera
+        ]
+        frames_saltar = [
+            pygame.transform.smoothscale(
+                img,
+                (int(img.get_width() * target_height / img.get_height()), target_height)
+            )
+            for img in personaje.frames_salto
+        ]
 
         ancho_hitbox = int(target_height * 0.55)  # 55% del alto de la animación
         frame_width = frames_correr[0].get_width() if frames_correr else int(68 * scale_factor)
@@ -150,8 +174,9 @@ class CarreraDeObstaculos:
 
         if (self.score // 10) >= self.next_diagonal_trigger and not self.diagonal_obstacle:
             is_safe = True
+            safe_distance = 380
             for obs in self.obstacle_manager.active:
-                if abs(obs.rect.x - self.S_WIDTH) < 380:
+                if obs.rect.right > self.S_WIDTH - safe_distance:
                     is_safe = False
                     break
 

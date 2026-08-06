@@ -34,7 +34,7 @@ class CharacterSelector:
         self.subtitle_font = pygame.font.SysFont(None, 24)
         
         # Cargar e integrar Fondo pista .jpeg
-        self.bg_image = pygame.image.load("Fondo pista .jpeg").convert()
+        self.bg_image = pygame.image.load("Fondo pista.jpeg").convert()
         self.bg_image = pygame.transform.scale(self.bg_image, (screen_width, screen_height))
         
         self.selected_index = 0

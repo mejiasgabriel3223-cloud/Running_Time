@@ -34,15 +34,26 @@ def main():
         if estado_actual == "MENU":
             resultado = menu.manejar_eventos(events)
             if resultado == "JUGANDO":
-                juego.reset_game()
+                # CAMBIO AQUÍ: Guardamos el nombre y vamos al SELECTOR en lugar del juego
                 juego.player_name = menu.player_name
-                sound_player.play_game_music(0)
-                estado_actual = "JUGANDO"
+                estado_actual = "SELECTOR" 
             elif resultado == "SALIR":
                 running = False
 
             menu.actualizar()
             menu.dibujar()
+
+        elif estado_actual == "SELECTOR":
+            for event in events:
+                personaje_elegido = juego.selector.handle_event(event)
+                
+                if personaje_elegido:
+                    juego.personaje_actual = personaje_elegido
+                    juego.reset_game()
+                    sound_player.play_game_music(0) 
+                    estado_actual = "JUGANDO"
+                    
+            juego.selector.draw(screen)
 
         elif estado_actual == "JUGANDO":
             resultado_eventos = juego.handle_events(events)
