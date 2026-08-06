@@ -1,6 +1,7 @@
 import pygame
 import random
 from settings import GRAVITY, JUMP_FORCE, SPACE_JUMP_FORCE
+from animador import cargar_spritesheet
 
 class Player:
     def __init__(self, x, y, w, h, ground_y, frames_carrera=None, frames_salto=None):
@@ -149,11 +150,21 @@ class DiagonalObstacle(Obstacle):
         self.ground_y = ground_y
 
         try:
-            self.image = pygame.image.load("pelota.png").convert_alpha()
-            self.image = pygame.transform.smoothscale(self.image, (w, h))
+            self.frames = cargar_spritesheet("pelota.png", 4, escala=(w, h))
+            if not self.frames:
+                raise ValueError("No frames loaded")
         except Exception:
+            self.frames = []
+
+        if self.frames:
+            self.current_frame = 0
+            self.anim_timer = 0
+            self.image = self.frames[0]
+        else:
             self.image = pygame.Surface((w, h), pygame.SRCALPHA)
             pygame.draw.ellipse(self.image, (255, 255, 255), self.image.get_rect())
+            self.current_frame = 0
+            self.anim_timer = 0
 
         self.rect = self.image.get_rect()
         self.rect.bottomleft = (x, 0)
@@ -166,6 +177,13 @@ class DiagonalObstacle(Obstacle):
                 self.rect.bottom = self.ground_y
         else:
             self.rect.bottom = self.ground_y
+
+        if self.frames:
+            self.anim_timer += 1
+            if self.anim_timer >= 6:
+                self.anim_timer = 0
+                self.current_frame = (self.current_frame + 1) % len(self.frames)
+                self.image = self.frames[self.current_frame]
 
 
     def draw(self, screen):
