@@ -1,5 +1,7 @@
 import json
+import math
 import os
+import random
 import pygame
 from abc import ABC, abstractmethod
 
@@ -24,7 +26,7 @@ class EstadoJuego(ABC):
 class EstadoMenu(EstadoJuego):
     def __init__(self, pantalla):
         super().__init__(pantalla)
-        self.options = ["Jugar", "Records", "Configuración", "Créditos", "Salir"]
+        self.options = ["Jugar", "Records", "Configuracion", "Creditos", "Salir"]
         self.selected_index = 0
         self.state = "MENU"
         self.player_name = ""
@@ -36,12 +38,24 @@ class EstadoMenu(EstadoJuego):
         self.records = self._load_records()
         self.sound_player = None
 
-        self.font_title = pygame.font.SysFont(None, 82)
-        self.font_option = pygame.font.SysFont(None, 46)
-        self.font_text = pygame.font.SysFont(None, 32)
-        self.font_small = pygame.font.SysFont(None, 26)
+        from settings import load_game_font, load_default_font
+
+        self.font_title = load_game_font(82)
+        self.font_option = load_game_font(46)
+        self.font_text = load_game_font(32)
+        self.font_small = load_game_font(26)
+        self.font_message = load_game_font(32)
+        self.default_font = load_default_font(26)
         self.fondo = pygame.image.load("Fondo pista.jpeg").convert()
-        self.imagen_titulo = pygame.image.load("Logo_sin_fondo.png").convert_alpha()
+        raw_logo = pygame.image.load("Logo_sin_fondo.png").convert_alpha()
+        logo_rect = raw_logo.get_bounding_rect()
+        self.imagen_titulo = raw_logo.subsurface(logo_rect).copy()
+        self.menu_messages = self._load_menu_messages()
+        self.current_menu_message = self._pick_random_menu_message()
+
+        # Posición fija del mensaje del menú (centro x, y fijo) - 40% de la altura
+        self.menu_message_pos = (self.pantalla.get_width() // 2, int(self.pantalla.get_height() * 0.40))
+        self.menu_message_scale = 1.0
 
         animacion_sheet_jake = pygame.image.load("baile jake.png").convert_alpha()
         frames_1 = recortar_sprite_sheet(animacion_sheet_jake, 357, 357, 27)
@@ -69,6 +83,40 @@ class EstadoMenu(EstadoJuego):
 
     def _show_message(self, text):
         self.message = text
+
+    def _load_menu_messages(self):
+        messages_file = os.path.join(os.path.dirname(__file__), "menu_messages.json")
+        if not os.path.exists(messages_file):
+            return [
+                "¡Cuidado con los saltos!",
+                "La pista nunca perdona a los distraidos.",
+                "Hoy corre como si el tiempo volara.",
+                "Los mejores resultados vienen con practica.",
+                "Un salto perfecto es un salto seguro."
+            ]
+
+        try:
+            with open(messages_file, "r", encoding="utf-8") as file:
+                data = json.load(file)
+                if isinstance(data, list) and all(isinstance(item, str) for item in data):
+                    return data
+        except (json.JSONDecodeError, OSError):
+            pass
+        return [
+            "¡Cuidado con los saltos!",
+            "La pista nunca perdona a los distraídos.",
+            "Hoy corre como si el tiempo volara.",
+            "Los mejores resultados vienen con práctica.",
+            "Un salto perfecto es un salto seguro."
+        ]
+
+    def _pick_random_menu_message(self):
+        if not self.menu_messages:
+            return ""
+        return random.choice(self.menu_messages)
+
+    def _enter_menu_state(self):
+        self.current_menu_message = self._pick_random_menu_message()
 
     def finalizar_partida(self, score, player_name):
         if not player_name:
@@ -101,7 +149,7 @@ class EstadoMenu(EstadoJuego):
         else:
             self.records.append({"name": self.pending_name, "score": self.pending_score})
             self._save_records()
-            self._show_message(f"Se guardó otra entrada para {self.pending_name}: {self.pending_score}")
+            self._show_message(f"Se guardo otra entrada para {self.pending_name}: {self.pending_score}")
 
         self.state = "MENU"
 
@@ -125,10 +173,10 @@ class EstadoMenu(EstadoJuego):
                     if option == "Records":
                         self.state = "RECORDS"
                         return None
-                    if option == "Configuración":
+                    if option == "Configuracion":
                         self.state = "CONFIGURATION"
                         return None
-                    if option == "Créditos":
+                    if option == "Creditos":
                         self.state = "CREDITS"
                         return None
                     if option == "Salir":
@@ -143,10 +191,12 @@ class EstadoMenu(EstadoJuego):
                     self.state = "MENU"
                     self.input_text = ""
                     self._show_message("")
+                    self._enter_menu_state()
                 elif evento.key == pygame.K_RETURN:
                     self.player_name = self.input_text.strip() or "Jugador"
                     self.state = "MENU"
                     self._show_message("")
+                    self._enter_menu_state()
                     return "JUGANDO"
                 elif evento.unicode and evento.unicode.isprintable() and len(self.input_text) < 16:
                     self.input_text += evento.unicode
@@ -161,6 +211,7 @@ class EstadoMenu(EstadoJuego):
                 if evento.key == pygame.K_ESCAPE:
                     self.state = "MENU"
                     self._show_message("")
+                    self._enter_menu_state()
 
         return None
 
@@ -168,6 +219,8 @@ class EstadoMenu(EstadoJuego):
         if self.state == "MENU":
             self.animacion_jake.actualizar()
             self.animacion_finn.actualizar()
+            elapsed = pygame.time.get_ticks() / 1000.0
+            self.menu_message_scale = 1.0 + 0.1 * math.sin(elapsed * 2.5)
             
         if self.sound_player is not None and self.state == "MENU" and self.message != "":
             pass
@@ -179,11 +232,15 @@ class EstadoMenu(EstadoJuego):
         self.pantalla.blit(rendered, rect)
 
     def _draw_menu(self):
-        rect_titulo = self.imagen_titulo.get_rect(center=(self.pantalla.get_width() // 2, 165))
+        # Ajuste del título: pegado al borde superior
+        rect_titulo = self.imagen_titulo.get_rect(midtop=(self.pantalla.get_width() // 2, 0))
         self.pantalla.blit(self.imagen_titulo, rect_titulo)
+        # start_y (primera opción) se calcula antes para pasarla al mensaje
+        start_y = 340
+        self._draw_menu_message(rect_titulo, start_y)
         self.pantalla.blit(self.animacion_jake.obtener_imagen_actual(), (self.pantalla.get_width() - 460, 360))
         self.pantalla.blit(self.animacion_finn.obtener_imagen_actual(), (self.pantalla.get_width() - 1180, 260))
-        start_y = 320
+
         for index, option in enumerate(self.options):
             color = (255, 255, 255)
             if index == self.selected_index:
@@ -196,6 +253,19 @@ class EstadoMenu(EstadoJuego):
             message_text = self.font_small.render(self.message, True, (220, 220, 220))
             message_rect = message_text.get_rect(center=(self.pantalla.get_width() // 2, 620))
             self.pantalla.blit(message_text, message_rect)
+
+    def _draw_menu_message(self, rect_titulo, first_option_y):
+        if not self.current_menu_message:
+            return
+        message_surface = self.font_message.render(self.current_menu_message, True, (255, 255, 255))
+        scale = max(0.7, min(1.3, self.menu_message_scale))
+        scaled_surface = pygame.transform.smoothscale(
+            message_surface,
+            (max(1, int(message_surface.get_width() * scale)), max(1, int(message_surface.get_height() * scale)))
+        )
+        center_x, center_y = self.menu_message_pos
+        message_rect = scaled_surface.get_rect(center=(center_x, center_y))
+        self.pantalla.blit(scaled_surface, message_rect)
 
     def _draw_name_input(self):
         self._draw_centered_text("Ingresa tu nombre", 140, self.font_title)
@@ -221,7 +291,7 @@ class EstadoMenu(EstadoJuego):
         top_records = sorted(self.records, key=lambda item: item.get("score", 0), reverse=True)[:8]
 
         if not top_records:
-            empty_text = self.font_text.render("Aún no hay records guardados", True, (255, 255, 255))
+            empty_text = self.font_text.render("Aun no hay records guardados", True, (255, 255, 255))
             empty_rect = empty_text.get_rect(center=(self.pantalla.get_width() // 2, 340))
             self.pantalla.blit(empty_text, empty_rect)
             return
@@ -230,7 +300,7 @@ class EstadoMenu(EstadoJuego):
             nombre = entry.get("name", "Jugador")
             puntaje = entry.get("score", 0)
             line = f"{index + 1}. {nombre} - {puntaje}"
-            rendered = self.font_text.render(line, True, (255, 255, 255))
+            rendered = self.default_font.render(line, True, (255, 255, 255))
             rect = rendered.get_rect(center=(self.pantalla.get_width() // 2, 300 + index * 40))
             self.pantalla.blit(rendered, rect)
 
@@ -239,9 +309,9 @@ class EstadoMenu(EstadoJuego):
         self.pantalla.blit(hint, hint_rect)
 
     def _draw_configuration(self):
-        self._draw_centered_text("Configuración", 120, self.font_title)
+        self._draw_centered_text("Configuracion", 120, self.font_title)
         lines = [
-            "Resolución: 1280x720",
+            "Resolucion: 1280x720",
             "FPS: 60",
             "Controles: Flechas/W-S para mover el cursor",
             "Enter para confirmar"
@@ -256,11 +326,11 @@ class EstadoMenu(EstadoJuego):
         self.pantalla.blit(hint, hint_rect)
 
     def _draw_credits(self):
-        self._draw_centered_text("Créditos", 120, self.font_title)
+        self._draw_centered_text("Creditos", 120, self.font_title)
         lines = [
             "Colaboradores: Gabriel Mejias, Sofia Marquez",
-            "Música: créditos musicales incluidos en la presentación",
-            "Efectos: sonidos básicos del juego",
+            "Musica: creditos musicales incluidos en la presentacion",
+            "Efectos: sonidos basicos del juego",
             "Gracias por jugar"
         ]
         for index, line in enumerate(lines):
@@ -274,9 +344,6 @@ class EstadoMenu(EstadoJuego):
 
     def dibujar(self):
         self.pantalla.blit(self.fondo, (0, 0))
-
-        if self.state == "MENU":
-            self._draw_menu()
 
         if self.state == "MENU":
             self._draw_menu()

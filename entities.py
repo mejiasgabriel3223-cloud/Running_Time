@@ -3,6 +3,58 @@ import random
 from settings import GRAVITY, JUMP_FORCE, SPACE_JUMP_FORCE
 from animador import cargar_spritesheet
 
+class BackgroundTree:
+    def __init__(self, x, y, height, screen_width, screen_height, sprite=None):
+        self.screen_width = screen_width
+        self.screen_height = screen_height
+        self.image = self._load_or_create_image(height, sprite)
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = max(115, min(y + 150, screen_height - self.rect.height - 20))
+        self.hitbox = self.rect.copy()
+        self.is_waiting = False
+        self.wait_frames = 0
+        self.reappear_delay_frames = 0
+
+    def _load_or_create_image(self, height, sprite):
+        if sprite is not None:
+            try:
+                image = pygame.image.load(sprite).convert_alpha()
+                size = max(90, int(height * 0.8))
+                return pygame.transform.smoothscale(image, (size, size))
+            except Exception:
+                pass
+
+        size = max(90, int(height * 0.8))
+        surface = pygame.Surface((size, size), pygame.SRCALPHA)
+        pygame.draw.rect(surface, (90, 60, 35), (0, 0, size, size))
+        return surface
+
+    def update(self, speed):
+        if self.is_waiting:
+            self.wait_frames += 1
+            if self.wait_frames >= self.reappear_delay_frames:
+                self.is_waiting = False
+                self.wait_frames = 0
+                self.rect.x = self.screen_width + 120
+                self.rect.y = max(40, min(self.rect.y, self.screen_height - self.rect.height - 120))
+                self.hitbox = self.rect.copy()
+            return
+
+        self.rect.x -= speed
+        self.hitbox.x = self.rect.x
+        self.hitbox.y = self.rect.y
+
+        if self.rect.right < -80:
+            self.is_waiting = True
+            self.wait_frames = 0
+            self.reappear_delay_frames = max(140, int(((self.screen_width + self.rect.width) / max(1.0, speed)) * 2))
+            self.rect.x = self.screen_width + 1200
+            self.hitbox = self.rect.copy()
+
+    def draw(self, screen):
+        screen.blit(self.image, self.rect)
+
 class Player:
     def __init__(self, x, y, w, h, ground_y, frames_carrera=None, frames_salto=None):
         self.rect = pygame.Rect(x, ground_y - h, w, h)

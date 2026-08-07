@@ -10,7 +10,7 @@ from audio import SoundPlayer
 def main():
     pygame.init()
     screen = pygame.display.set_mode((S_WIDTH, S_HEIGHT))
-    pygame.display.set_caption("Carrera de Obstáculos")
+    pygame.display.set_caption("Carrera de Obstaculos")
     clock = pygame.time.Clock()
 
     sound_player = SoundPlayer()

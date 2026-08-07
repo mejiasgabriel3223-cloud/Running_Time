@@ -1,8 +1,8 @@
 # game.py 
 import pygame
 import random
-from settings import S_WIDTH, S_HEIGHT
-from entities import Player, DiagonalObstacle, ObstaclePoolManager
+from settings import S_WIDTH, S_HEIGHT, load_default_font
+from entities import Player, DiagonalObstacle, ObstaclePoolManager, BackgroundTree
 from personajes import Personaje
 from selector_de_personajes import CharacterSelector
 
@@ -11,8 +11,10 @@ class CarreraDeObstaculos:
         self.screen = screen
         self.S_WIDTH = S_WIDTH
         self.S_HEIGHT = S_HEIGHT
-        self.font = pygame.font.SysFont("consolas", 24)
-        self.frenzy_alert_font = pygame.font.SysFont("consolas", 48, bold=True)
+        from settings import load_game_font
+        self.font = load_game_font(24)
+        self.default_font = load_default_font(24)
+        self.frenzy_alert_font = load_game_font(48, bold=True)
         self.player_name = "Jugador"
         self.sound_player = None
         
@@ -42,6 +44,7 @@ class CarreraDeObstaculos:
         self.obstacle_manager.spawn_pair(self.S_WIDTH + 260, self.gap_variants)
         self.fondo = pygame.image.load("Fondo pista.jpeg").convert()
         self.fondo = pygame.transform.scale(self.fondo, (self.S_WIDTH, self.S_HEIGHT))
+        self.bg_offset = 0.0
 
         self.diagonal_obstacle = None
         self.next_diagonal_trigger = 180
@@ -99,6 +102,15 @@ class CarreraDeObstaculos:
             ancho_hitbox, target_height, self.ground_y,
             frames_carrera=frames_correr,
             frames_salto=frames_saltar
+        )
+
+        self.background_tree = BackgroundTree(
+            self.S_WIDTH + 140,
+            24,
+            target_height + 40,
+            self.S_WIDTH,
+            self.S_HEIGHT,
+            sprite="decor_sprite.png"
         )
 
     def handle_events(self, events):
@@ -189,6 +201,8 @@ class CarreraDeObstaculos:
 
         self.update_speed(dt)
         self.update_autoplay()
+        self.bg_offset = (self.bg_offset + self.speed) % self.S_WIDTH
+        self.background_tree.update(self.speed)
         self.player.update(game_speed=self.speed)
         self.obstacle_manager.update(self.speed)
         
@@ -282,7 +296,11 @@ class CarreraDeObstaculos:
             self.player.stop_fast_fall()
 
     def draw(self):
-        self.screen.blit(self.fondo, (0, 0))
+        offset = int(self.bg_offset)
+        self.screen.blit(self.fondo, (-offset, 0))
+        if offset > 0:
+            self.screen.blit(self.fondo, (self.S_WIDTH - offset, 0))
+        self.background_tree.draw(self.screen)
         self.player.draw(self.screen)
         self.obstacle_manager.draw(self.screen)
         
@@ -291,10 +309,10 @@ class CarreraDeObstaculos:
         
         pygame.draw.line(self.screen, (120, 120, 120), (0, self.ground_y), (self.S_WIDTH, self.ground_y), 2)
         
-        score_text = self.font.render(f"Score: {self.score // 10}", True, (0, 0, 0))
+        score_text = self.default_font.render(f"Score: {self.score // 10}", True, (0, 0, 0))
         self.screen.blit(score_text, (20, 20))
 
-        boost_state = "Modo Frenesí: ON" if self.boost_active else "Modo Frenesí: OFF"
+        boost_state = "Modo Frenesi: ON" if self.boost_active else "Modo Frenesi: OFF"
         boost_text = self.font.render(boost_state, True, (220, 90, 0) if self.boost_active else (100, 100, 100))
         self.screen.blit(boost_text, (20, 56))
 
@@ -315,5 +333,5 @@ class CarreraDeObstaculos:
             scaled_rect = scaled_surface.get_rect(center=rect.center)
             self.screen.blit(scaled_surface, scaled_rect)
         
-        fps_text = self.font.render(f"FPS: {self.current_fps}", True, (0, 0, 180))
+        fps_text = self.default_font.render(f"FPS: {self.current_fps}", True, (0, 0, 180))
         self.screen.blit(fps_text, (self.S_WIDTH - 140, 20))
