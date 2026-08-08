@@ -1,11 +1,13 @@
 import pygame
 
+from settings import load_game_font
+
 class CharacterCard:
     def __init__(self, x, y, character, width=140, height=180):
         self.character = character
         self.rect = pygame.Rect(x, y, width, height)
         self.icon_scaled = pygame.transform.scale(character.icon, (100, 100))
-        self.font = pygame.font.SysFont(None, 28)
+        self.font = load_game_font(28)
         
     def draw(self, screen, is_selected=False):
         # Colores y bordes según el foco
@@ -30,8 +32,8 @@ class CharacterSelector:
     def __init__(self, characters, screen_width, screen_height):
         self.characters = characters
         self.cards = []
-        self.title_font = pygame.font.SysFont(None, 48)
-        self.subtitle_font = pygame.font.SysFont(None, 24)
+        self.title_font = load_game_font(48)
+        self.subtitle_font = load_game_font(24)
         
         # Cargar e integrar Fondo pista .jpeg
         self.bg_image = pygame.image.load("Fondo pista.jpeg").convert()

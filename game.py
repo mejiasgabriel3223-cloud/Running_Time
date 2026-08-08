@@ -2,7 +2,7 @@
 import pygame
 import random
 from settings import S_WIDTH, S_HEIGHT
-from entities import Player, DiagonalObstacle, ObstaclePoolManager
+from entities import Player, DiagonalObstacle, ObstaclePoolManager, BackgroundTree
 from personajes import Personaje
 from selector_de_personajes import CharacterSelector
 from animador import Animador
@@ -12,8 +12,9 @@ class CarreraDeObstaculos:
         self.screen = screen
         self.S_WIDTH = S_WIDTH
         self.S_HEIGHT = S_HEIGHT
-        self.font = pygame.font.SysFont("consolas", 24)
-        self.frenzy_alert_font = pygame.font.SysFont("consolas", 48, bold=True)
+        from settings import load_game_font
+        self.font = load_game_font(24)
+        self.frenzy_alert_font = load_game_font(48, bold=True)
         self.player_name = "Jugador"
         self.sound_player = None
         
@@ -43,6 +44,7 @@ class CarreraDeObstaculos:
         self.obstacle_manager.spawn_pair(self.S_WIDTH + 260, self.gap_variants)
         self.fondo = pygame.image.load("Fondo pista.jpeg").convert()
         self.fondo = pygame.transform.scale(self.fondo, (self.S_WIDTH, self.S_HEIGHT))
+        self.bg_offset = 0.0
 
         self.diagonal_obstacle = None
         self.next_diagonal_trigger = 180
@@ -99,6 +101,15 @@ class CarreraDeObstaculos:
             ancho_hitbox, target_height, self.ground_y,
             frames_carrera=frames_correr,
             frames_salto=frames_saltar
+        )
+
+        self.background_tree = BackgroundTree(
+            self.S_WIDTH + 140,
+            24,
+            target_height + 40,
+            self.S_WIDTH,
+            self.S_HEIGHT,
+            sprite="decor_sprite.png"
         )
 
     def handle_events(self, events):
@@ -181,6 +192,12 @@ class CarreraDeObstaculos:
             self.last_fps_time = curr
 
         self.update_speed(dt)
+<<<<<<< HEAD
+=======
+        self.update_autoplay()
+        self.bg_offset = (self.bg_offset + self.speed) % self.S_WIDTH
+        self.background_tree.update(self.speed)
+>>>>>>> 9ea019197520cf73f783b7b585069f4e0f5daaca
         self.player.update(game_speed=self.speed)
         self.obstacle_manager.update(self.speed)
         
@@ -270,7 +287,11 @@ class CarreraDeObstaculos:
             self.player.stop_fast_fall()
 
     def draw(self):
-        self.screen.blit(self.fondo, (0, 0))
+        offset = int(self.bg_offset)
+        self.screen.blit(self.fondo, (-offset, 0))
+        if offset > 0:
+            self.screen.blit(self.fondo, (self.S_WIDTH - offset, 0))
+        self.background_tree.draw(self.screen)
         self.player.draw(self.screen)
         self.obstacle_manager.draw(self.screen)
         
@@ -282,6 +303,29 @@ class CarreraDeObstaculos:
         score_text = self.font.render(f"Score: {self.score // 10}", True, (0, 0, 0))
         self.screen.blit(score_text, (20, 20))
 
+<<<<<<< HEAD
+=======
+        boost_state = "Modo Frenesi: ON" if self.boost_active else "Modo Frenesi: OFF"
+        boost_text = self.font.render(boost_state, True, (220, 90, 0) if self.boost_active else (100, 100, 100))
+        self.screen.blit(boost_text, (20, 56))
+
+        challenge_state = "Modo Prueba: ON" if self.challenge_mode else "Modo Prueba: OFF"
+        challenge_text = self.font.render(challenge_state, True, (0, 120, 220) if self.challenge_mode else (100, 100, 100))
+        self.screen.blit(challenge_text, (20, 86))
+
+        if self.frenzy_alert_active:
+            elapsed = self.frenzy_alert_timer
+            if elapsed < 0.25:
+                scale = 0.8 + elapsed / 0.25 * 1.4
+            else:
+                scale = 2.2 - (elapsed / 0.7) * 1.5
+            scale = max(0.2, min(scale, 2.2))
+            text_surface = self.frenzy_alert_font.render("MODO FRENESI", True, (220, 0, 0))
+            rect = text_surface.get_rect(center=(self.S_WIDTH // 2, self.S_HEIGHT // 2 - 40))
+            scaled_surface = pygame.transform.scale_by(text_surface, scale)
+            scaled_rect = scaled_surface.get_rect(center=rect.center)
+            self.screen.blit(scaled_surface, scaled_rect)
+>>>>>>> 9ea019197520cf73f783b7b585069f4e0f5daaca
         
         fps_text = self.font.render(f"FPS: {self.current_fps}", True, (0, 0, 180))
         self.screen.blit(fps_text, (self.S_WIDTH - 140, 20))

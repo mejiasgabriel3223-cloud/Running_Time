@@ -1,9 +1,12 @@
 [
   {
+<<<<<<< HEAD
     "name": "Jugador",
     "score": 313
   },
   {
+=======
+>>>>>>> 9ea019197520cf73f783b7b585069f4e0f5daaca
     "name": "yy",
     "score": 250
   },
@@ -16,18 +19,30 @@
     "score": 223
   },
   {
+<<<<<<< HEAD
     "name": "a",
     "score": 209
   },
   {
     "name": "Jugador",
     "score": 148
+=======
+    "name": "gunther",
+    "score": 188
+>>>>>>> 9ea019197520cf73f783b7b585069f4e0f5daaca
   },
   {
     "name": "sdkmg",
     "score": 139
   },
   {
+<<<<<<< HEAD
+=======
+    "name": "a",
+    "score": 138
+  },
+  {
+>>>>>>> 9ea019197520cf73f783b7b585069f4e0f5daaca
     "name": "sofii",
     "score": 118
   },
@@ -56,8 +71,13 @@
     "score": 96
   },
   {
+<<<<<<< HEAD
     "name": "k",
     "score": 93
+=======
+    "name": "Gabriel",
+    "score": 94
+>>>>>>> 9ea019197520cf73f783b7b585069f4e0f5daaca
   },
   {
     "name": "gabriel+}",
@@ -76,18 +96,46 @@
     "score": 71
   },
   {
+<<<<<<< HEAD
     "name": "sofi",
     "score": 55
   },
   {
+=======
+    "name": "Gabriel",
+    "score": 55
+  },
+  {
+    "name": "Jugador",
+    "score": 54
+  },
+  {
+    "name": "Gabriel",
+    "score": 53
+  },
+  {
+    "name": "}",
+    "score": 53
+  },
+  {
+>>>>>>> 9ea019197520cf73f783b7b585069f4e0f5daaca
     "name": "so",
     "score": 41
+  },
+  {
+    "name": "gABRIEL",
+    "score": 39
+  },
+  {
+    "name": "Gabriel",
+    "score": 39
   },
   {
     "name": "PRUEBA",
     "score": 37
   },
   {
+<<<<<<< HEAD
     "name": "Gabriel",
     "score": 36
   },
@@ -106,6 +154,10 @@
   {
     "name": "}",
     "score": 33
+=======
+    "name": "Jugador",
+    "score": 35
+>>>>>>> 9ea019197520cf73f783b7b585069f4e0f5daaca
   },
   {
     "name": "so",
@@ -156,16 +208,13 @@
     "score": 18
   },
   {
-    "name": "Gabriel",
-    "score": 18
-  },
-  {
     "name": "s",
     "score": 17
   },
   {
     "name": "sofi",
     "score": 17
+<<<<<<< HEAD
   },
   {
     "name": "Gabriel",
@@ -174,5 +223,7 @@
   {
     "name": "so",
     "score": 14
+=======
+>>>>>>> 9ea019197520cf73f783b7b585069f4e0f5daaca
   }
 ]
