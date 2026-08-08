@@ -38,14 +38,13 @@ class EstadoMenu(EstadoJuego):
         self.records = self._load_records()
         self.sound_player = None
 
-        from settings import load_game_font, load_default_font
+        from settings import load_game_font
 
         self.font_title = load_game_font(82)
         self.font_option = load_game_font(46)
         self.font_text = load_game_font(32)
         self.font_small = load_game_font(26)
         self.font_message = load_game_font(32)
-        self.default_font = load_default_font(26)
         self.fondo = pygame.image.load("Fondo pista.jpeg").convert()
         raw_logo = pygame.image.load("Logo_sin_fondo.png").convert_alpha()
         logo_rect = raw_logo.get_bounding_rect()
@@ -300,7 +299,7 @@ class EstadoMenu(EstadoJuego):
             nombre = entry.get("name", "Jugador")
             puntaje = entry.get("score", 0)
             line = f"{index + 1}. {nombre} - {puntaje}"
-            rendered = self.default_font.render(line, True, (255, 255, 255))
+            rendered = self.font_text.render(line, True, (255, 255, 255))
             rect = rendered.get_rect(center=(self.pantalla.get_width() // 2, 300 + index * 40))
             self.pantalla.blit(rendered, rect)
 

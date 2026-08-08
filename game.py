@@ -1,7 +1,7 @@
 # game.py 
 import pygame
 import random
-from settings import S_WIDTH, S_HEIGHT, load_default_font
+from settings import S_WIDTH, S_HEIGHT
 from entities import Player, DiagonalObstacle, ObstaclePoolManager, BackgroundTree
 from personajes import Personaje
 from selector_de_personajes import CharacterSelector
@@ -13,7 +13,6 @@ class CarreraDeObstaculos:
         self.S_HEIGHT = S_HEIGHT
         from settings import load_game_font
         self.font = load_game_font(24)
-        self.default_font = load_default_font(24)
         self.frenzy_alert_font = load_game_font(48, bold=True)
         self.player_name = "Jugador"
         self.sound_player = None
@@ -309,7 +308,7 @@ class CarreraDeObstaculos:
         
         pygame.draw.line(self.screen, (120, 120, 120), (0, self.ground_y), (self.S_WIDTH, self.ground_y), 2)
         
-        score_text = self.default_font.render(f"Score: {self.score // 10}", True, (0, 0, 0))
+        score_text = self.font.render(f"Score: {self.score // 10}", True, (0, 0, 0))
         self.screen.blit(score_text, (20, 20))
 
         boost_state = "Modo Frenesi: ON" if self.boost_active else "Modo Frenesi: OFF"
@@ -333,5 +332,5 @@ class CarreraDeObstaculos:
             scaled_rect = scaled_surface.get_rect(center=rect.center)
             self.screen.blit(scaled_surface, scaled_rect)
         
-        fps_text = self.default_font.render(f"FPS: {self.current_fps}", True, (0, 0, 180))
+        fps_text = self.font.render(f"FPS: {self.current_fps}", True, (0, 0, 180))
         self.screen.blit(fps_text, (self.S_WIDTH - 140, 20))
