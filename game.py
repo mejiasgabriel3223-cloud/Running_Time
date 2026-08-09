@@ -1,11 +1,16 @@
 # game.py 
+import json
 import pygame
 import random
+from pathlib import Path
 from settings import S_WIDTH, S_HEIGHT
 from entities import Player, DiagonalObstacle, ObstaclePoolManager, BackgroundTree
 from personajes import Personaje
 from selector_de_personajes import CharacterSelector
 from animador import Animador
+
+BASE_DIR = Path(__file__).parent
+IMAGENES_DIR = BASE_DIR / "imagenes"
 
 class CarreraDeObstaculos:
     def __init__(self, screen):
@@ -17,11 +22,13 @@ class CarreraDeObstaculos:
         self.frenzy_alert_font = load_game_font(48, bold=True)
         self.player_name = "Jugador"
         self.sound_player = None
-        
+
+        self.base_dir = Path(__file__).parent
+        self.imagenes_dir = self.base_dir / "imagenes"
         self.personajes_disponibles = [
-            Personaje("Finn", "fin_quieto.png", "fin_corriendo.png", 10, "fin_saltando.png", 9),
-            Personaje("Jake", "jake_quieto.png", "jake_corriendo.png", 8, "jake_saltando.png", 10),
-            Personaje("Gunther", "gunter_quieto.png", "gunter_corriendo.png", 8, "gunter_saltando.png", 7)
+            Personaje("Finn", str(self.imagenes_dir / "fin_quieto.png"), str(self.imagenes_dir / "fin_corriendo.png"), 10, str(self.imagenes_dir / "fin_saltando.png"), 9),
+            Personaje("Jake", str(self.imagenes_dir / "jake_quieto.png"), str(self.imagenes_dir / "jake_corriendo.png"), 8, str(self.imagenes_dir / "jake_saltando.png"), 10),
+            Personaje("Gunther", str(self.imagenes_dir / "gunter_quieto.png"), str(self.imagenes_dir / "gunter_corriendo.png"), 8, str(self.imagenes_dir / "gunter_saltando.png"), 7)
         ]
 
         self.selector = CharacterSelector(self.personajes_disponibles, self.S_WIDTH, self.S_HEIGHT)
@@ -42,7 +49,8 @@ class CarreraDeObstaculos:
         ]
         self.obstacle_manager = ObstaclePoolManager(self.ground_y, self.obstacle_types)
         self.obstacle_manager.spawn_pair(self.S_WIDTH + 260, self.gap_variants)
-        self.fondo = pygame.image.load("Fondo pista.jpeg").convert()
+        ruta_fondo = self.base_dir / "imagenes" / "Fondo pista.jpeg"
+        self.fondo = pygame.image.load(str(ruta_fondo)).convert()
         self.fondo = pygame.transform.scale(self.fondo, (self.S_WIDTH, self.S_HEIGHT))
         self.bg_offset = 0.0
 
@@ -51,6 +59,7 @@ class CarreraDeObstaculos:
         self.base_speed = 9.2
         self.speed = self.base_speed
         self.score = 0
+        self.record_summary = None
         
         self.boost_active = False
         self.boost_multiplier = 1.0
@@ -109,7 +118,7 @@ class CarreraDeObstaculos:
             target_height + 40,
             self.S_WIDTH,
             self.S_HEIGHT,
-            sprite="decor_sprite.png"
+            sprite=str(IMAGENES_DIR / "decor_sprite.png")
         )
 
     def handle_events(self, events):
@@ -183,6 +192,33 @@ class CarreraDeObstaculos:
 
         return True
 
+    def _get_record_summary(self, score_value):
+        clean_name = (self.player_name or "Jugador").strip() or "Jugador"
+        records_file = self.base_dir / "records.json"
+        records = []
+
+        if records_file.exists():
+            try:
+               with open(records_file, "r", encoding="utf-8") as handle:
+                    data = json.load(handle)
+                    if isinstance(data, list):
+                        records = data
+            except (json.JSONDecodeError, OSError):
+                records = []
+
+        matching_records = [entry for entry in records if str(entry.get("name", "")).lower() == clean_name.lower()]
+        best_score = max((entry.get("score", 0) for entry in matching_records), default=0)
+
+        return {
+            "player_name": clean_name,
+            "score": score_value,
+            "best_score": best_score,
+            "is_new_record": score_value > best_score,
+        }
+
+    def _update_record_summary(self):
+        self.record_summary = self._get_record_summary(self.score // 10)
+
     def update(self, dt):
         self.frames_count += 1
         curr = pygame.time.get_ticks()
@@ -192,16 +228,13 @@ class CarreraDeObstaculos:
             self.last_fps_time = curr
 
         self.update_speed(dt)
-<<<<<<< HEAD
-=======
-        self.update_autoplay()
         self.bg_offset = (self.bg_offset + self.speed) % self.S_WIDTH
         self.background_tree.update(self.speed)
->>>>>>> 9ea019197520cf73f783b7b585069f4e0f5daaca
         self.player.update(game_speed=self.speed)
         self.obstacle_manager.update(self.speed)
         
         if self.obstacle_manager.check_collision(self.player.rect):
+            self._update_record_summary()
             return "GAMEOVER"
 
         if (self.score // 10) >= self.next_diagonal_trigger and not self.diagonal_obstacle:
@@ -218,73 +251,6 @@ class CarreraDeObstaculos:
 
         self.score += 1
         return None
-
-    def update_autoplay(self):
-        if not self.challenge_mode:
-            return
-
-        active_obs = [obs for obs in self.obstacle_manager.active if obs.rect.right > self.player.rect.left]
-        if self.diagonal_obstacle and self.diagonal_obstacle.rect.right > self.player.rect.left:
-            active_obs.append(self.diagonal_obstacle)
-        
-        active_obs.sort(key=lambda x: x.rect.left)
-
-        if not active_obs:
-            self.player.release_jump()
-            if self.player.rect.bottom < self.ground_y:
-                self.player.start_fast_fall()
-            return
-
-        first = active_obs[0]
-
-        if isinstance(first, DiagonalObstacle):
-            self.player.release_jump()
-            if self.player.rect.bottom < self.ground_y:
-                self.player.start_fast_fall()
-            return
-
-        # Detección de distancia corta entre obstáculos (~20 de separación)
-        has_short_gap = False
-        target_obs = first
-        cluster_end_x = first.rect.right
-
-        if len(active_obs) > 1 and not isinstance(active_obs[1], DiagonalObstacle):
-            gap = active_obs[1].rect.left - first.rect.right
-            if gap <= 35:
-                has_short_gap = True
-                target_obs = active_obs[1]  # Tomamos el SEGUNDO obstáculo como referencia
-                cluster_end_x = active_obs[1].rect.right
-
-        # Distancia al objetivo (al primero normalmente, o al segundo si hay distancia corta)
-        dist_to_target = target_obs.rect.left - self.player.rect.right
-
-        # Umbral: si hay espacio corto, salta antes (añadiendo la anticipación de 30)
-        if has_short_gap:
-            multiplier = 36 if self.boost_active else 32
-            jump_threshold = (self.speed * multiplier) + 30
-        else:
-            multiplier = 30 if self.boost_active else 26
-            jump_threshold = self.speed * multiplier
-
-        should_jump = (0 < dist_to_target <= jump_threshold)
-
-        if should_jump:
-            self.player.stop_fast_fall()
-            if self.player.rect.bottom >= self.ground_y:
-                self.player.jump()
-            else:
-                self.player.holding_jump = True
-
-        # Control de vuelo: mantiene el salto hasta rebasar por completo el último obstáculo del grupo
-        if self.player.rect.bottom < self.ground_y:
-            if self.player.rect.left < cluster_end_x + 10:
-                self.player.holding_jump = True
-            else:
-                self.player.release_jump()
-                self.player.start_fast_fall()
-        else:
-            self.player.release_jump()
-            self.player.stop_fast_fall()
 
     def draw(self):
         offset = int(self.bg_offset)
@@ -303,15 +269,9 @@ class CarreraDeObstaculos:
         score_text = self.font.render(f"Score: {self.score // 10}", True, (0, 0, 0))
         self.screen.blit(score_text, (20, 20))
 
-<<<<<<< HEAD
-=======
         boost_state = "Modo Frenesi: ON" if self.boost_active else "Modo Frenesi: OFF"
         boost_text = self.font.render(boost_state, True, (220, 90, 0) if self.boost_active else (100, 100, 100))
         self.screen.blit(boost_text, (20, 56))
-
-        challenge_state = "Modo Prueba: ON" if self.challenge_mode else "Modo Prueba: OFF"
-        challenge_text = self.font.render(challenge_state, True, (0, 120, 220) if self.challenge_mode else (100, 100, 100))
-        self.screen.blit(challenge_text, (20, 86))
 
         if self.frenzy_alert_active:
             elapsed = self.frenzy_alert_timer
@@ -325,7 +285,6 @@ class CarreraDeObstaculos:
             scaled_surface = pygame.transform.scale_by(text_surface, scale)
             scaled_rect = scaled_surface.get_rect(center=rect.center)
             self.screen.blit(scaled_surface, scaled_rect)
->>>>>>> 9ea019197520cf73f783b7b585069f4e0f5daaca
         
         fps_text = self.font.render(f"FPS: {self.current_fps}", True, (0, 0, 180))
         self.screen.blit(fps_text, (self.S_WIDTH - 140, 20))
@@ -338,12 +297,21 @@ class CarreraDeObstaculos:
         title_font = pygame.font.SysFont("consolas", 60, bold=True)
         text_font = pygame.font.SysFont("consolas", 28)
 
+        record_status = self.record_summary or self._get_record_summary(self.score // 10)
         title_surface = title_font.render("GAME OVER", True, (255, 255, 255))
         score_surface = text_font.render(f"Puntaje: {self.score // 10}", True, (255, 255, 255))
+        personal_record_surface = text_font.render(f"Record personal: {record_status['best_score']}", True, (255, 255, 255))
+        comparison_surface = text_font.render(
+            "Nuevo record!" if record_status["is_new_record"] else "No superaste tu record",
+            True,
+            (255, 220, 100) if record_status["is_new_record"] else (220, 220, 220),
+        )
         retry_surface = text_font.render("Presiona Enter para reiniciar", True, (220, 220, 220))
         menu_surface = text_font.render("Presiona ESC para volver al menú", True, (220, 220, 220))
 
         self.screen.blit(title_surface, title_surface.get_rect(center=(self.S_WIDTH // 2, 220)))
-        self.screen.blit(score_surface, score_surface.get_rect(center=(self.S_WIDTH // 2, 300)))
-        self.screen.blit(retry_surface, retry_surface.get_rect(center=(self.S_WIDTH // 2, 360)))
-        self.screen.blit(menu_surface, menu_surface.get_rect(center=(self.S_WIDTH // 2, 410)))
+        self.screen.blit(score_surface, score_surface.get_rect(center=(self.S_WIDTH // 2, 290)))
+        self.screen.blit(personal_record_surface, personal_record_surface.get_rect(center=(self.S_WIDTH // 2, 335)))
+        self.screen.blit(comparison_surface, comparison_surface.get_rect(center=(self.S_WIDTH // 2, 375)))
+        self.screen.blit(retry_surface, retry_surface.get_rect(center=(self.S_WIDTH // 2, 430)))
+        self.screen.blit(menu_surface, menu_surface.get_rect(center=(self.S_WIDTH // 2, 480)))

@@ -1,9 +1,12 @@
 import json
 import math
-import os
 import random
 import pygame
+from pathlib import Path
 from abc import ABC, abstractmethod
+
+BASE_DIR = Path(__file__).parent
+IMAGENES_DIR = BASE_DIR / "imagenes"
 
 from animador import Animador, recortar_sprite_sheet
 class EstadoJuego(ABC):
@@ -34,7 +37,7 @@ class EstadoMenu(EstadoJuego):
         self.message = ""
         self.pending_score = None
         self.pending_name = None
-        self.records_file = os.path.join(os.path.dirname(__file__), "records.json")
+        self.records_file = BASE_DIR / "records.json"
         self.records = self._load_records()
         self.sound_player = None
 
@@ -45,8 +48,8 @@ class EstadoMenu(EstadoJuego):
         self.font_text = load_game_font(32)
         self.font_small = load_game_font(26)
         self.font_message = load_game_font(32)
-        self.fondo = pygame.image.load("Fondo pista.jpeg").convert()
-        raw_logo = pygame.image.load("Logo_sin_fondo.png").convert_alpha()
+        self.fondo = pygame.image.load(str(IMAGENES_DIR / "Fondo pista.jpeg")).convert()
+        raw_logo = pygame.image.load(str(IMAGENES_DIR / "Logo_sin_fondo.png")).convert_alpha()
         logo_rect = raw_logo.get_bounding_rect()
         self.imagen_titulo = raw_logo.subsurface(logo_rect).copy()
         self.menu_messages = self._load_menu_messages()
@@ -56,15 +59,15 @@ class EstadoMenu(EstadoJuego):
         self.menu_message_pos = (self.pantalla.get_width() // 2, int(self.pantalla.get_height() * 0.40))
         self.menu_message_scale = 1.0
 
-        animacion_sheet_jake = pygame.image.load("baile jake.png").convert_alpha()
+        animacion_sheet_jake = pygame.image.load(str(IMAGENES_DIR / "baile jake.png")).convert_alpha()
         frames_1 = recortar_sprite_sheet(animacion_sheet_jake, 357, 357, 27)
         self.animacion_jake = Animador(frames_1, velocidad=8)
 
-        animacion_sheet_finn = pygame.image.load("fin bailando.png").convert_alpha()
+        animacion_sheet_finn = pygame.image.load(str(IMAGENES_DIR / "fin bailando.png")).convert_alpha()
         frames_2 = recortar_sprite_sheet(animacion_sheet_finn, 386, 386, 4)
         self.animacion_finn = Animador(frames_2, velocidad=8)
     def _load_records(self):
-        if not os.path.exists(self.records_file):
+        if not self.records_file.exists():
             return []
 
         try:
@@ -84,8 +87,8 @@ class EstadoMenu(EstadoJuego):
         self.message = text
 
     def _load_menu_messages(self):
-        messages_file = os.path.join(os.path.dirname(__file__), "menu_messages.json")
-        if not os.path.exists(messages_file):
+        messages_file = BASE_DIR / "menu_messages.json"
+        if not messages_file.exists():
             return [
                 "¡Cuidado con los saltos!",
                 "La pista nunca perdona a los distraidos.",

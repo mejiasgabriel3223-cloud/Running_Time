@@ -62,6 +62,7 @@ def main():
 
             resultado_update = juego.update(dt)
             if resultado_update == "GAMEOVER":
+                juego._update_record_summary()
                 estado_actual = "GAMEOVER"
             elif resultado_update == "MENU":
                 estado_actual = "MENU"

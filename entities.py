@@ -1,8 +1,13 @@
 import pygame
 import random
-import os
+from pathlib import Path
+
 from settings import GRAVITY, JUMP_FORCE, SPACE_JUMP_FORCE
 from animador import cargar_spritesheet
+
+BASE_DIR = Path(__file__).parent
+IMAGENES_DIR = BASE_DIR / 'imagenes'
+
 
 class BackgroundTree:
     def __init__(self, x, y, height, screen_width, screen_height, sprite=None):
@@ -56,6 +61,7 @@ class BackgroundTree:
     def draw(self, screen):
         screen.blit(self.image, self.rect)
 
+
 class Player:
     def __init__(self, x, y, w, h, ground_y, frames_carrera=None, frames_salto=None):
         self.rect = pygame.Rect(x, ground_y - h, w, h)
@@ -66,24 +72,23 @@ class Player:
         self.holding_down = False
         self.space_jumping = False
         self.last_space_jump_time = 0
-        
-        carrera_valida = frames_carrera if (frames_carrera and frames_carrera is not ...) else []
-        salto_valido = frames_salto if (frames_salto and frames_salto is not ...) else []
 
-        # Escalamos los frames al tamaño exacto w y h
+        carrera_valida = frames_carrera or []
+        salto_valido = frames_salto or []
+
         self.frames_carrera = [pygame.transform.smoothscale(img, (w, h)) for img in carrera_valida]
         self.frames_salto = [pygame.transform.smoothscale(img, (w, h)) for img in salto_valido]
-        
+
         self.current_frame = 0
         self.animacion_timer = 0
         self.en_suelo_anterior = True
-        
+
         if self.frames_carrera:
             self.image = self.frames_carrera[0]
         else:
-            # Cuadro rosado de respaldo por si acaso falta algún frame
-            self.image = pygame.Surface((w, h))
+            self.image = pygame.Surface((w, h), pygame.SRCALPHA)
             self.image.fill((255, 0, 255))
+
     def jump(self):
         if self.rect.bottom >= self.ground_y and not self.space_jumping:
             self.vy = JUMP_FORCE
@@ -126,9 +131,9 @@ class Player:
         if self.rect.bottom >= self.ground_y:
             self.rect.bottom = self.ground_y
             self.vy = 0
+
     def update_animacion(self, saltando=False, game_speed=1.0):
         frames_actuales = self.frames_salto if saltando else self.frames_carrera
-        
         if not frames_actuales:
             return
 
@@ -148,56 +153,73 @@ class Player:
             if self.animacion_timer >= frame_rate:
                 self.current_frame = (self.current_frame + 1) % len(frames_actuales)
                 self.animacion_timer = 0
-                
+
         self.image = frames_actuales[self.current_frame]
 
     def draw(self, screen):
         if self.image:
             screen.blit(self.image, self.rect)
+
+
 class Obstacle:
     def __init__(self, x, y, w, h):
-        try:
-            # 1. Cargamos la imagen real de la valla
-            ruta_valla = "Valla.png"
-            if not os.path.exists(ruta_valla):
-                ruta_valla = "valla.jpg"
+        self.image = self._load_obstacle_image(w, h)
+        self.rect = self.image.get_rect()
+        self.rect.bottomleft = (x, y)
+        # Hitbox reducida: la imagen puede ser más ancha visualmente,
+        # así que mantenemos una caja de colisión más ajustada al centro
+        w_reduc = max(0, int(self.rect.width * 0.35))
+        h_reduc = max(0, int(self.rect.height * 0.10))
+        self.hitbox = self.rect.inflate(-w_reduc, -h_reduc)
+        # Alineamos la hitbox con la parte inferior izquierda del sprite
+        self.hitbox.bottomleft = self.rect.bottomleft
 
-            imagen_bruta = pygame.image.load(ruta_valla).convert_alpha()
-            caja_visible = imagen_bruta.get_bounding_rect()
-            imagen_limpia = imagen_bruta.subsurface(caja_visible)
-            
-            # 2. Usamos EXACTAMENTE la altura 'h' que le pases, sin mínimos forzados
-            proporcion = imagen_limpia.get_width() / imagen_limpia.get_height()
-            ancho_visible = int(h * proporcion)
-            
-            # 3. Escalamos la valla
-            self.image = pygame.transform.smoothscale(imagen_limpia, (ancho_visible, h))
-        except Exception as e:
-            print(f"Error cargando imagen de valla: {e}")
-            ancho_visible = max(24, int(w * 0.7))
-            self.image = pygame.Surface((ancho_visible, h), pygame.SRCALPHA)
-            self.image.fill((180, 50, 50))
-            pygame.draw.rect(self.image, (255, 255, 255), (4, 4, ancho_visible - 8, h - 8), 2)
-            for i in range(3):
-                line_y = 8 + i * (h - 16) // 2
-                pygame.draw.line(self.image, (220, 220, 220), (8, line_y), (ancho_visible - 8, line_y), 2)
-        finally:
-            self.rect = self.image.get_rect()
-            self.rect.bottomleft = (x, y)
-            self.hitbox = pygame.Rect(0, 0, max(4, int(self.rect.width * 0.2)), h)
-            self.hitbox.midbottom = self.rect.midbottom
+    def _load_obstacle_image(self, w, h):
+        candidates = [
+            IMAGENES_DIR / 'Valla.png',
+            IMAGENES_DIR / 'Valla.jpg',
+            IMAGENES_DIR / 'valla.png',
+            IMAGENES_DIR / 'valla.jpg',
+            BASE_DIR / 'Valla.png',
+            BASE_DIR / 'Valla.jpg',
+        ]
+
+        for ruta in candidates:
+            if not ruta.exists():
+                continue
+            try:
+                imagen_bruta = pygame.image.load(str(ruta)).convert_alpha()
+                caja_visible = imagen_bruta.get_bounding_rect()
+                if caja_visible.width <= 0 or caja_visible.height <= 0:
+                    continue
+
+                imagen_limpia = imagen_bruta.subsurface(caja_visible)
+                proporcion = imagen_limpia.get_width() / max(1, imagen_limpia.get_height())
+                ancho_visible = max(24, int(h * proporcion))
+                return pygame.transform.smoothscale(imagen_limpia, (ancho_visible, h))
+            except Exception:
+                continue
+
+        ancho_visible = max(24, int(w * 0.7))
+        surface = pygame.Surface((ancho_visible, h), pygame.SRCALPHA)
+        surface.fill((180, 50, 50))
+        pygame.draw.rect(surface, (255, 255, 255), (4, 4, ancho_visible - 8, h - 8), 2)
+        for i in range(3):
+            line_y = 8 + i * (h - 16) // 2
+            pygame.draw.line(surface, (220, 220, 220), (8, line_y), (ancho_visible - 8, line_y), 2)
+        return surface
 
     def update(self, speed):
         self.rect.x -= speed
-        if hasattr(self, 'hitbox'):
+        # Mantener la hitbox sincronizada con la posición visual
+        if hasattr(self, "hitbox"):
             self.hitbox.x = self.rect.x + (self.rect.width - self.hitbox.width) // 2
-            self.hitbox.y = self.rect.y
+            self.hitbox.y = self.rect.y + (self.rect.height - self.hitbox.height) // 2
 
     def draw(self, screen):
-        if self.image:
-            screen.blit(self.image, self.rect)
-        else:
-            pygame.draw.rect(screen, (0, 200, 0), self.rect)
+        screen.blit(self.image, self.rect)
+
+
 class DiagonalObstacle(Obstacle):
     def __init__(self, x, w, h, ground_y, speed_x=7, speed_y=4):
         self.base_speed_x = speed_x
@@ -207,9 +229,10 @@ class DiagonalObstacle(Obstacle):
         self.ground_y = ground_y
 
         try:
-            self.frames = cargar_spritesheet("pelota.png", 4, escala=(w, h))
+            ruta_pelota = IMAGENES_DIR / 'pelota.png'
+            self.frames = cargar_spritesheet(str(ruta_pelota), 4, escala=(w, h))
             if not self.frames:
-                raise ValueError("No frames loaded")
+                raise ValueError('No frames loaded')
         except Exception:
             self.frames = []
 
@@ -246,16 +269,14 @@ class DiagonalObstacle(Obstacle):
                 self.current_frame = (self.current_frame + 1) % len(self.frames)
                 self.image = self.frames[self.current_frame]
 
-
     def draw(self, screen):
-        if hasattr(self, "image") and self.image:
+        if hasattr(self, 'image') and self.image:
             screen.blit(self.image, self.rect)
         else:
             pygame.draw.rect(screen, (180, 0, 0), self.rect)
 
 
 class ObstaclePoolManager:
-    """Gestiona la memoria y la aleatoriedad de los obstáculos"""
     def __init__(self, ground_y, types):
         self.ground_y = ground_y
         self.types = types
@@ -288,4 +309,8 @@ class ObstaclePoolManager:
             obs.draw(screen)
 
     def check_collision(self, player_rect):
-        return any(player_rect.colliderect(o.hitbox) for o in self.active)
+        for o in self.active:
+            target = getattr(o, "hitbox", o.rect)
+            if player_rect.colliderect(target):
+                return True
+        return False

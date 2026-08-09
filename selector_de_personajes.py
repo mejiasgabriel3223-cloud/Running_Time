@@ -1,6 +1,9 @@
 import pygame
-
+from pathlib import Path
 from settings import load_game_font
+
+BASE_DIR = Path(__file__).parent
+IMAGENES_DIR = BASE_DIR / "imagenes"
 
 class CharacterCard:
     def __init__(self, x, y, character, width=140, height=180):
@@ -36,8 +39,8 @@ class CharacterSelector:
         self.subtitle_font = load_game_font(24)
         
         # Cargar e integrar Fondo pista .jpeg
-        self.bg_image = pygame.image.load("Fondo pista.jpeg").convert()
-        self.bg_image = pygame.transform.scale(self.bg_image, (screen_width, screen_height))
+        ruta_fondo = IMAGENES_DIR / "Fondo pista.jpeg"
+        self.bg_image = pygame.image.load(str(ruta_fondo)).convert()
         
         self.selected_index = 0
         

@@ -42,7 +42,7 @@ def _find_project_font_path():
     return font_files[0]
 
 
-FONT_SCALE = 0.7
+FONT_SCALE = 1.0
 
 def load_game_font(size, bold=False):
     scaled_size = max(1, int(round(size * FONT_SCALE)))
