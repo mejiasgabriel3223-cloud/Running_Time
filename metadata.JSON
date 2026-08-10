@@ -1,7 +1,7 @@
 {
     "id": "carrera_de_obstaculos",
-    "title": "Carrera de Obstaculos",
-    "description": "Juego de carrera de obstáculos",
+    "title": "Running Time!",
+    "description": "Juego de carrera de obstáculos en el mundo de Adventure Time, donde los jugadores deben superar diferentes obstáculos y desafíos para llegar a la meta.",
     "authors": ["Gabriel Mejias", "Sofia Marquez"],
     "group_number": 7,
     "cover_path": "assets/covers/carrera_de_obstaculos.jpg"

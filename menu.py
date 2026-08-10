@@ -6,7 +6,7 @@ from pathlib import Path
 from abc import ABC, abstractmethod
 
 BASE_DIR = Path(__file__).parent
-IMAGENES_DIR = BASE_DIR / "imagenes"
+IMAGENES_DIR = BASE_DIR / "assets"
 
 from animador import Animador, recortar_sprite_sheet
 class EstadoJuego(ABC):

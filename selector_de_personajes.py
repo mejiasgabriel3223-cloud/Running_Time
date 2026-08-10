@@ -3,7 +3,7 @@ from pathlib import Path
 from settings import load_game_font
 
 BASE_DIR = Path(__file__).parent
-IMAGENES_DIR = BASE_DIR / "imagenes"
+IMAGENES_DIR = BASE_DIR / "assets"
 
 class CharacterCard:
     def __init__(self, x, y, character, width=140, height=180):

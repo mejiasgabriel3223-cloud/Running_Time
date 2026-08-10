@@ -6,7 +6,7 @@ from settings import GRAVITY, JUMP_FORCE, SPACE_JUMP_FORCE
 from animador import cargar_spritesheet
 
 BASE_DIR = Path(__file__).parent
-IMAGENES_DIR = BASE_DIR / 'imagenes'
+IMAGENES_DIR = BASE_DIR / 'assets'
 
 
 class BackgroundTree:

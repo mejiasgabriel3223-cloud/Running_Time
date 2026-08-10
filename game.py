@@ -10,7 +10,7 @@ from selector_de_personajes import CharacterSelector
 from animador import Animador
 
 BASE_DIR = Path(__file__).parent
-IMAGENES_DIR = BASE_DIR / "imagenes"
+IMAGENES_DIR = BASE_DIR / "assets"
 
 class CarreraDeObstaculos:
     def __init__(self, screen):
@@ -24,7 +24,7 @@ class CarreraDeObstaculos:
         self.sound_player = None
 
         self.base_dir = Path(__file__).parent
-        self.imagenes_dir = self.base_dir / "imagenes"
+        self.imagenes_dir = self.base_dir / "assets"
         self.personajes_disponibles = [
             Personaje("Finn", str(self.imagenes_dir / "fin_quieto.png"), str(self.imagenes_dir / "fin_corriendo.png"), 10, str(self.imagenes_dir / "fin_saltando.png"), 9),
             Personaje("Jake", str(self.imagenes_dir / "jake_quieto.png"), str(self.imagenes_dir / "jake_corriendo.png"), 8, str(self.imagenes_dir / "jake_saltando.png"), 10),
@@ -49,7 +49,7 @@ class CarreraDeObstaculos:
         ]
         self.obstacle_manager = ObstaclePoolManager(self.ground_y, self.obstacle_types)
         self.obstacle_manager.spawn_pair(self.S_WIDTH + 260, self.gap_variants)
-        ruta_fondo = self.base_dir / "imagenes" / "Fondo pista.jpeg"
+        ruta_fondo = self.base_dir / "assets" / "Fondo pista.jpeg"
         self.fondo = pygame.image.load(str(ruta_fondo)).convert()
         self.fondo = pygame.transform.scale(self.fondo, (self.S_WIDTH, self.S_HEIGHT))
         self.bg_offset = 0.0
