@@ -167,12 +167,16 @@ class Obstacle:
         self.rect = self.image.get_rect()
         self.rect.bottomleft = (x, y)
         # Hitbox reducida: la imagen puede ser más ancha visualmente,
-        # así que mantenemos una caja de colisión más ajustada al centro
-        w_reduc = max(0, int(self.rect.width * 0.35))
+        # así que mantenemos una caja de colisión más ajustada al centro.
+        # Reducimos más el ancho para que la columna de colisión quede delgada.
+        w_reduc = max(0, int(self.rect.width * 0.45))
         h_reduc = max(0, int(self.rect.height * 0.10))
         self.hitbox = self.rect.inflate(-w_reduc, -h_reduc)
-        # Alineamos la hitbox con la parte inferior izquierda del sprite
-        self.hitbox.bottomleft = self.rect.bottomleft
+        # Alineamos la hitbox un poco a la derecha de la imagen.
+        self.hitbox.left = self.rect.left + 6
+        self.hitbox.bottom = self.rect.bottom
+        self.image_offset_x = 6
+        self.hitbox_offset_x = 6
 
     def _load_obstacle_image(self, w, h):
         candidates = [
@@ -213,11 +217,11 @@ class Obstacle:
         self.rect.x -= speed
         # Mantener la hitbox sincronizada con la posición visual
         if hasattr(self, "hitbox"):
-            self.hitbox.x = self.rect.x + (self.rect.width - self.hitbox.width) // 2
+            self.hitbox.x = self.rect.x + (self.rect.width - self.hitbox.width) // 2 + self.hitbox_offset_x
             self.hitbox.y = self.rect.y + (self.rect.height - self.hitbox.height) // 2
 
     def draw(self, screen):
-        screen.blit(self.image, self.rect)
+        screen.blit(self.image, (self.rect.x - self.image_offset_x, self.rect.y))
 
 
 class DiagonalObstacle(Obstacle):
@@ -248,12 +252,20 @@ class DiagonalObstacle(Obstacle):
 
         self.rect = self.image.get_rect()
         self.rect.bottomleft = (x, 0)
+        w_reduc = max(0, int(self.rect.width * 0.25))
+        h_reduc = max(0, int(self.rect.height * 0.15))
+        self.hitbox = self.rect.inflate(-w_reduc, -h_reduc)
+        self.hitbox.bottomleft = self.rect.bottomleft
 
     def update(self, speed=None):
         horizontal_speed = self.speed_x if speed is None else max(self.base_speed_x + 1.0, speed * 1.2)
         vertical_speed = self.speed_y if speed is None else max(self.base_speed_y + 1.4, self.base_speed_y + speed * 0.2)
 
         self.rect.x -= horizontal_speed
+        if hasattr(self, 'hitbox'):
+            self.hitbox.x = self.rect.x + (self.rect.width - self.hitbox.width) // 2
+            self.hitbox.y = self.rect.y + (self.rect.height - self.hitbox.height) // 2
+
         if self.rect.bottom < self.ground_y:
             self.rect.y += vertical_speed
             if self.rect.bottom > self.ground_y:

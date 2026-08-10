@@ -55,14 +55,14 @@ class CarreraDeObstaculos:
         self.bg_offset = 0.0
 
         self.diagonal_obstacle = None
-        self.next_diagonal_trigger = 180
+        self.next_diagonal_trigger = 67
         self.base_speed = 9.2
         self.speed = self.base_speed
         self.score = 0
         self.record_summary = None
         
         self.boost_active = False
-        self.boost_multiplier = 1.0
+        self.boost_multiplier = 1.15
         self.next_boost_trigger = 300
         self.boost_duration_points = 150
         self.boost_end_score = 0
@@ -159,10 +159,11 @@ class CarreraDeObstaculos:
 
     def update_speed(self, dt):
         score_points = self.score // 10
-        self.speed = self.base_speed + min(4.4, score_points * 0.03)
+        base_speed = self.base_speed + min(4.4, score_points * 0.03)
+        self.speed = base_speed
 
         if self.boost_active:
-            self.speed = self.base_speed + min(4.4, score_points * 0.03) + 0.8
+            self.speed = base_speed * self.boost_multiplier
             self.frenzy_alert_timer += dt
             if score_points >= self.boost_end_score:
                 self.boost_active = False
@@ -237,14 +238,22 @@ class CarreraDeObstaculos:
             self._update_record_summary()
             return "GAMEOVER"
 
+        if self.diagonal_obstacle:
+            diagonal_hitbox = getattr(self.diagonal_obstacle, 'hitbox', self.diagonal_obstacle.rect)
+            if self.player.rect.colliderect(diagonal_hitbox):
+                self._update_record_summary()
+                return "GAMEOVER"
+
         if (self.score // 10) >= self.next_diagonal_trigger and not self.diagonal_obstacle:
             if self._can_spawn_diagonal_obstacle():
                 spawn_x = self.S_WIDTH + 280
                 self.diagonal_obstacle = DiagonalObstacle(spawn_x, 30, 30, self.ground_y)
-                self.next_diagonal_trigger += 50 if self.boost_active else 100
+                self.next_diagonal_trigger += 67
 
         if self.diagonal_obstacle:
             self.diagonal_obstacle.update(self.speed)
+            if self.diagonal_obstacle.rect.right < 0:
+                self.diagonal_obstacle = None
 
         if not self.obstacle_manager.active:
             self.obstacle_manager.spawn_pair(self.S_WIDTH + random.randint(180, 320), self.gap_variants)
