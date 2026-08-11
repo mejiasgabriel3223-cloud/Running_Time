@@ -19,7 +19,7 @@ class CarreraDeObstaculos:
         self.S_HEIGHT = S_HEIGHT
         from settings import load_game_font
         self.font = load_game_font(24)
-        self.frenzy_alert_font = load_game_font(48, bold=True)
+        self.frenzy_alert_font = load_game_font(48)
         self.player_name = "Jugador"
         self.sound_player = None
 
@@ -63,7 +63,7 @@ class CarreraDeObstaculos:
         
         self.boost_active = False
         self.boost_multiplier = 1.15
-        self.next_boost_trigger = 300
+        self.next_boost_trigger = 150
         self.boost_duration_points = 150
         self.boost_end_score = 0
         self.frenzy_alert_timer = 0.0
